@@ -1,0 +1,36 @@
+Data Engineer, Analytics (University Grad)
+Meta Platforms, Inc.
+Location: Menlo Park, CA / New York, NY / Seattle, WA
+Employment Type: Full-Time
+Salary: up to $134,000/year + bonus + equity + benefits
+Status: Actively hiring 2026
+
+About the Team:
+The Analytics, Data Engineering team is looking for fast-moving analytics candidates and data junkies who want to make an impact. The data warehouse team works very closely with Product Managers, Product Analysts, and Internet Marketers to figure out ways to acquire new users, retain existing users, and optimize user experience using massive amounts of data. The Data team functions as an internal "customer" that dogfoods Meta's data infrastructure and drives product improvements.
+
+About the Job:
+As a Data Engineer on the Analytics team, you will be responsible for designing, building, and launching efficient and reliable new data models and data infrastructure in Meta's data warehouse. You will enable Meta's products and services teams to drive data-informed decisions at scale.
+
+Responsibilities:
+- Architect, implement, and deploy new data models and data processes in production
+- Interface with Engineers, Product Managers, and Product Analysts to understand product goals and data needs
+- Build data expertise and own data quality for allocated areas of ownership
+- Manage data warehouse plans for a product or a group of products
+- Perform data analysis to generate business insights and identify data trends
+- Solve data integration problems by utilizing optimal Extract, Transform, Load (ETL) patterns, frameworks, and query techniques, sourcing from structured and unstructured data sources
+- Support critical data processes running in production
+
+Minimum Qualifications:
+- Bachelor's degree in Computer Science, Computer Engineering, a relevant technical field, or equivalent practical experience. Degree must be completed prior to joining Meta.
+- Experience involving features and design scenarios across a big data ecosystem (Hadoop, Hive, HBase, Spark, Kafka, etc.) or custom ETL design, implementation, and maintenance
+- Knowledge of SQL and Python
+- Experience with at least one of: Hive, Spark, Hadoop, or similar big data tooling
+
+Preferred Qualifications:
+- Experience thriving in a fast-paced work environment
+- Curious, self-driven, analytical and excited to play with data
+- Experience collaborating with individuals and organizations across technical and non-technical disciplines
+- Experience with data pipeline orchestration (Airflow, dbt)
+- Knowledge of distributed computing and large-scale data processing
+- Familiarity with data warehouse concepts and dimensional modeling
+- Experience with A/B testing and experimentation frameworks

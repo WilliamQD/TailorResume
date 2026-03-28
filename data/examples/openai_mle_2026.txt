@@ -1,0 +1,42 @@
+Research Scientist / Research Engineer — Early Career Cohort
+OpenAI
+Location: San Francisco, CA (hybrid — 3 days/week in office)
+Employment Type: Full-Time
+Salary: $295,000/year
+Cohort Start Date: June 3, 2026
+
+About the Program:
+OpenAI is seeking a small cohort of exceptional early-career researchers and engineers — targeting undergraduate students and recent graduates who have excelled in competitive technical challenges. The program begins with an intensive one-month research bootcamp before participants are placed on permanent teams. This role is designed explicitly for candidates with 0–3 years of experience. Relocation assistance is available.
+
+Bootcamp Activities:
+During the intensive one-month period, participants will:
+- Learn OpenAI's research infrastructure and tools
+- Work with mentors on direct research experience
+- Meet researchers across teams to explore directions
+- Tackle technically demanding research challenges
+
+Who They're Seeking:
+Ideal candidates typically demonstrate excellence through one or more of the following:
+- Top performance in mathematics or programming competitions (IMO, EGMO, IOI, Putnam, ICPC)
+- Success in OpenAI-hosted challenges
+- Background in mathematics, physics, or quantitative research
+- Built ambitious technical systems or research prototypes
+- Exceptional early-career technical intuition
+
+Minimum Qualifications:
+- Demonstrated exceptional mathematical or algorithmic problem-solving ability
+- Strong reasoning about complex technical systems
+- Proficiency with linear algebra, probability, statistics, and optimization
+- Evidence of rapid independent learning and technical creativity
+- Ability to obtain and maintain authorization to work in the United States
+
+Preferred Qualifications:
+- High-level competition results (IMO, IOI, Putnam, ICPC, etc.)
+- Novel performance in OpenAI-hosted challenges
+- Research background in mathematics, algorithms, theoretical CS, physics, or machine learning
+- Independent ML or AI research projects
+
+About the Role:
+OpenAI develops large-scale AI systems including GPT and o-series models. The research engineering team works on training infrastructure, model architecture, alignment, and safety. New cohort members work alongside world-class researchers from day one and are expected to contribute to fundamental research in machine learning, deep learning, reinforcement learning, and AI systems engineering.
+
+Skills required: Python, PyTorch, machine learning, deep learning, reinforcement learning, distributed training, CUDA, transformers, LLM training, experiment tracking, MLflow, model evaluation.

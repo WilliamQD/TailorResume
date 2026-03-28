@@ -27,15 +27,15 @@ def format_sector_report(
 
     lines = [
         f"\n{role_type.upper()} Market Report ({jd_count} JD{'s' if jd_count != 1 else ''} analyzed)",
-        "\u2500" * 50,
+        "-" * 50,
         f"{'Skill':<28} {'Freq':>6}  {'You Have':>8}  {'Gap':>4}",
-        "\u2500" * 50,
+        "-" * 50,
     ]
     missing = []
     for item in gaps:
         skill = item["skill"]
         pct = item["pct"]
-        have = "\u2713" if item["in_bank"] else "\u2717"
+        have = "yes" if item["in_bank"] else "no"
         gap = "<-- MISSING" if not item["in_bank"] and pct >= 0.3 else ""
         lines.append(f"  {skill:<26} {pct:>5.0%}  {have:>8}  {gap}")
         if not item["in_bank"] and pct >= 0.3:
@@ -69,9 +69,9 @@ def format_cross_sector_report(
     counts_header = "  ".join(f"{rt.upper():>6}" for rt in active)
     lines = [
         "\nCross-Sector Skill Demand",
-        "\u2500" * 70,
+        "-" * 70,
         f"{'Skill':<28}  {counts_header}  {'Overall':>8}  Status",
-        "\u2500" * 70,
+        "-" * 70,
     ]
     high_leverage = []
     for item in skills:
@@ -80,7 +80,7 @@ def format_cross_sector_report(
             f"{item['sectors'].get(rt, 0):>6.0%}" for rt in active
         )
         overall = item["overall_pct"]
-        have = "\u2713 You have this" if skill.lower() in bank_skills else "\u2717 GAP"
+        have = "yes" if skill.lower() in bank_skills else "MISSING"
         lines.append(f"  {skill:<26}  {sector_pcts}  {overall:>7.0%}  {have}")
         if skill.lower() not in bank_skills and overall >= 0.4 and len(item["sectors"]) >= 2:
             high_leverage.append((skill, overall, len(item["sectors"])))
@@ -88,7 +88,7 @@ def format_cross_sector_report(
     if high_leverage:
         lines.append("\nHigh-Leverage Gaps (appear in multiple sectors):")
         for skill, pct, n_sectors in sorted(high_leverage, key=lambda x: -x[1])[:5]:
-            lines.append(f"  - {skill} \u2014 {pct:.0%} overall, found in {n_sectors} sectors")
+            lines.append(f"  - {skill} -- {pct:.0%} overall, found in {n_sectors} sectors")
 
     return "\n".join(lines)
 

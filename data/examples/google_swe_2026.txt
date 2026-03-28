@@ -1,0 +1,30 @@
+Software Engineer, Early Career, Campus, 2026
+Google
+Posted: September 30, 2025
+Locations: Mountain View CA, Cambridge MA, Kirkland WA, Los Angeles CA, New York NY, Pittsburgh PA, San Bruno CA, Seattle WA, San Jose CA, Sunnyvale CA
+Employment Type: Full-time
+Salary: $118,000–$170,000 + bonus + equity + benefits
+
+About the Job:
+Google's software engineers develop the next-generation technologies that change how billions of users connect, explore, and interact with information and one another. Our products need to handle information at a massive scale, and extend well beyond web search. We're looking for engineers who bring fresh ideas from all areas, including information retrieval, distributed computing, large-scale system design, networking and data storage, security, artificial intelligence, natural language processing, UI design and mobile. As a software engineer, you will work on a specific project critical to Google's needs with opportunities to switch teams and projects as you and our business grow and evolve. We need our engineers to be versatile, display leadership qualities and be enthusiastic to take on new problems across the full-stack as we continue to push technology forward.
+
+In this role, you will manage project priorities, deadlines, and deliverables. You will design, develop, test, deploy, maintain, and improve software across the full stack.
+
+Minimum Qualifications:
+- Bachelor's degree in Computer Science, a similar technical field of study, or equivalent practical experience.
+- Experience working with data structures or algorithms during coursework, projects, research, internships, or practical experience in school or work (e.g. open-source coding).
+- Experience with software development in one or more programming languages (e.g., Python, C, C++, Java, JavaScript).
+
+Preferred Qualifications:
+- Master's degree in Computer Science or related technical field.
+- Experience with web and/or mobile development, Unix/Linux, distributed and parallel systems, machine learning, information retrieval, natural language processing, networking, developing large software systems, and/or security software development.
+- Experience developing accessible technologies.
+- Ability to learn other coding languages as needed.
+
+Responsibilities:
+- Design, develop, test, deploy, maintain, and improve software.
+- Manage project priorities, deadlines, and deliverables.
+- Take on tasks as requested and follow through to completion despite roadblocks or distractions.
+- Research, conceive, and develop software applications to extend and improve on Google's product offering.
+- Contribute to a wide variety of projects utilizing natural language processing, artificial intelligence, data compression, machine learning, and search technologies.
+- Collaborate on scalability issues involving access to massive amounts of data and information.
