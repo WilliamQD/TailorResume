@@ -1,0 +1,102 @@
+# Exemplary resume bullets per sector for few-shot prompting.
+# Format: role_type → bullets (good examples) + anti_patterns (bad examples)
+# why_good / why_bad explain the principle, not just the verdict.
+# Bullets are anonymized composites — not from real people.
+
+swe:
+  bullets:
+    - text: "Redesigned payment processing service to handle 3x peak traffic, reducing P99 latency from 820ms to 95ms by replacing synchronous DB writes with async Kafka events and circuit-breaker retry logic"
+      why_good: "Leads with concrete problem (3x traffic), before/after numbers (820ms→95ms), names the specific technical change"
+    - text: "Built developer platform adopted by 200+ engineers, cutting median deployment time from 45 min to 3 min through automated canary releases, rollback tooling, and Terraform-managed infrastructure"
+      why_good: "Scale (200+ engineers), dramatic time improvement, enumerates what was built"
+    - text: "Migrated monolithic auth service to stateless JWT tokens, eliminating a Redis session store that was causing 4–6 outages/quarter and reducing auth latency p50 from 12ms to 2ms"
+      why_good: "Business problem first (outages), then solution, then measurable outcome"
+    - text: "Designed sharded PostgreSQL schema for 2B+ row events table, achieving sub-50ms query latency without full table scans by co-locating tenant data and using partial indexes"
+      why_good: "Scale (2B rows), specific technique (sharding, partial indexes), clear metric"
+  anti_patterns:
+    - text: "Responsible for maintaining backend services and fixing various bugs across the codebase"
+      why_bad: "Pure duty description — no scale, no impact, no specifics. 'Various' is a red flag word."
+    - text: "Leveraged cutting-edge cloud-native technologies to spearhead innovative microservices solutions"
+      why_bad: "Buzzword salad. Removes all information. Could be written about anything."
+    - text: "Worked on improving the performance of some database queries which led to better user experience"
+      why_bad: "'Some', 'better' — vague. No numbers. 'Worked on' is weak. No technique named."
+
+ds:
+  bullets:
+    - text: "Developed Bayesian hierarchical model estimating county-level disease prevalence from sparse survey data (n=1,200 counties), achieving 94% coverage of 95% credible intervals vs. 81% for MLE baseline"
+      why_good: "Method first (Bayesian hierarchical), specific data context, statistical validation metric"
+    - text: "Designed randomized holdout experiment (n=4.2M users, 80% power at δ=0.5pp) to measure long-term retention effect of onboarding change; identified 3.1pp lift (p=0.002) missed by naive pre/post analysis"
+      why_good: "Shows experimental rigor: sample size, power calculation, comparison to naive approach"
+    - text: "Reduced false positive rate in fraud alerts from 31% to 8% by replacing threshold rules with gradient boosted trees trained on 18 months of labeled transactions, saving ~140 analyst-hours/week"
+      why_good: "Before/after metric (31%→8%), method, data context, business impact (analyst hours)"
+    - text: "Built mixed-effects survival model to identify 3 prognostic biomarkers for treatment response (HR=0.58, 95% CI [0.42, 0.79], p<0.001), results incorporated into Phase III trial stratification criteria"
+      why_good: "Methodology-first, precise statistics with CIs, clear clinical downstream impact"
+  anti_patterns:
+    - text: "Used Python and machine learning to analyze data and generate insights for the business"
+      why_bad: "No method, no scale, no metric, no impact. 'Insights' is meaningless. Could describe anything."
+    - text: "Built a model that predicted customer churn with good accuracy"
+      why_bad: "'Good accuracy' is not a number. What model? What data? What did it enable?"
+    - text: "Performed data analysis using SQL and Tableau to support business decisions"
+      why_bad: "Tools-first (SQL, Tableau) with zero methodology. 'Support business decisions' means nothing."
+
+mle:
+  bullets:
+    - text: "Built real-time feature store serving 12 ML models in production, reducing feature computation latency from 8 hours (batch) to 120ms (online) using Redis for hot features and Feast for orchestration"
+      why_good: "Concrete before/after (8hr→120ms), production scale (12 models), tools named"
+    - text: "Trained and deployed LoRA fine-tuned LLaMA-3 for internal code review summarization; achieved 4.2/5 human eval score vs. 3.1 for GPT-4 baseline at 40% lower inference cost per token"
+      why_good: "Full lifecycle (train→deploy), human eval comparison, cost impact"
+    - text: "Reduced ML training pipeline wall time by 65% (18h→6.3h) by profiling GPU utilization, switching to BF16 mixed precision, and parallelizing data preprocessing across 8 workers"
+      why_good: "Specific improvement (65%, 18h→6.3h), systematic approach (profiling first), techniques named"
+    - text: "Implemented shadow-mode A/B framework for safe model rollout — runs new model on 10% of traffic, compares predictions against production silently, and auto-promotes if KL divergence stays <0.05"
+      why_good: "Production-safety focus, specific mechanism, quantified threshold"
+  anti_patterns:
+    - text: "Worked on machine learning models and helped deploy them to production systems"
+      why_bad: "'Worked on' and 'helped' are weak. No model type, no scale, no impact."
+    - text: "Improved model performance by tuning hyperparameters and adding more training data"
+      why_bad: "Generic — applies to every ML project ever. No metric, no specifics."
+
+de:
+  bullets:
+    - text: "Built Kafka→Flink→ClickHouse pipeline processing 800K events/sec from IoT fleet, achieving exactly-once delivery via idempotent sink writes and 99.97% monthly uptime over 18 months"
+      why_good: "Throughput (800K/s), reliability guarantee (exactly-once), uptime over time"
+    - text: "Migrated 6TB/day Spark batch jobs to streaming with 15-minute micro-batches, reducing reporting lag from 24 hours to 20 minutes while halving compute cost through partition pruning optimizations"
+      why_good: "Scale (6TB/day), before/after latency (24h→20min), cost impact"
+    - text: "Designed multi-tenant data lakehouse schema (Delta Lake) enabling 50+ analysts to self-serve queries in <30s on 5-year historical data, replacing 4-hour ad-hoc Hive jobs"
+      why_good: "Business impact (self-serve), metric (<30s), scale (5 years), comparison to previous state"
+  anti_patterns:
+    - text: "Built data pipelines using Apache Spark and Airflow to process data for analytics teams"
+      why_bad: "Tools listed but no scale, no latency, no reliability metric, no business impact."
+
+finance:
+  bullets:
+    - text: "Identified $3.8M in mispriced credit risk across 12K SMB loans by developing XGBoost PD model trained on 5-year repayment history, improving Gini coefficient from 0.42 to 0.71 vs. FICO baseline"
+      why_good: "Dollar impact first ($3.8M), business context (SMB loans), model improvement metric"
+    - text: "Automated daily P&L attribution report previously requiring 3 analyst-hours, reducing turnaround from T+1 EOD to T+15min using Python/Bloomberg API integration and vectorized pandas operations"
+      why_good: "Business impact (automation), time savings (3hrs→15min), specific tools"
+    - text: "Built factor exposure dashboard for $2.1B equity long/short book, enabling PMs to identify unintended sector concentration in <5 minutes vs. 2-hour weekly spreadsheet review"
+      why_good: "AUM context ($2.1B), business workflow improvement, before/after time"
+  anti_patterns:
+    - text: "Used Python to analyze financial data and create reports for the investment team"
+      why_bad: "No domain specificity, no scale, no impact, no metric. Could be anyone."
+
+biostats:
+  bullets:
+    - text: "Designed adaptive enrichment trial for NSCLC subgroup (n=240, interim at n=120), using Bayesian predictive probability to enrich for PD-L1 high patients; reduced expected sample size 28% vs. fixed design"
+      why_good: "Specific disease, adaptive design method, clinical rationale, sample size efficiency gain"
+    - text: "Developed SAS macro automating ANCOVA-based responder analysis for 14 Phase II endpoints, reducing biostatistician time per table from 4 hours to 15 minutes with full CDISC ADAM compliance"
+      why_good: "Tool (SAS macro), regulatory context (CDISC ADAM), efficiency gain (4hr→15min)"
+    - text: "Conducted primary analysis for Phase III trial (N=1,847): mixed-model repeated measures for primary endpoint (p=0.003, treatment difference 2.8 [95% CI: 0.9, 4.7]) with pre-specified sensitivity analyses"
+      why_good: "Scale, statistical method, precise results with CIs, regulatory rigor (pre-specified)"
+  anti_patterns:
+    - text: "Performed statistical analyses using SAS and R to support clinical trial reporting"
+      why_bad: "No trial phase, no endpoint, no method, no result. 'Support' is passive."
+
+analyst:
+  bullets:
+    - text: "Identified $12M in annual savings by analyzing 3-year vendor spend data (18 suppliers, $240M total), revealing 6 consolidation opportunities accepted by procurement leadership in Q3 review"
+      why_good: "Dollar impact first, data context, specific finding, stakeholder acceptance"
+    - text: "Built self-serve SQL dashboard used by 40+ stakeholders to monitor 12 KPIs in real time, replacing weekly Excel reports and saving ~6 analyst-hours/week across the data team"
+      why_good: "Scale (40+ users), specific capability, efficiency gain"
+  anti_patterns:
+    - text: "Created dashboards and reports to help business stakeholders make better decisions"
+      why_bad: "No specifics — any analyst anywhere could write this."
