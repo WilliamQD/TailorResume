@@ -21,6 +21,7 @@ from jobplanner.llm import create_client
 from jobplanner.llm.base import LLMClient
 from jobplanner.parser.jd_parser import parse_jd
 from jobplanner.tailor.agent import tailor_resume
+from jobplanner.tailor.enrichment import build_enriched_context
 from jobplanner.tailor.validator import ValidationResult, validate_tailored_resume
 
 
@@ -89,17 +90,21 @@ def run_pipeline(
     jd_text: str,
     settings: Settings,
     skip_proofread: bool = False,
+    skip_critic: bool = False,
     on_progress: Callable[[str], None] | None = None,
 ) -> PipelineResult:
     """Execute the full tailoring pipeline.
 
     Stages:
     1. Parse JD
-    2. Tailor resume
-    3. Validate (anti-hallucination)
-    4. Render LaTeX
-    5. Compile PDF (with 1-page retry loop)
-    6. ATS check + optional proofread
+    2. Enrich context (load guidelines + market data)
+    3. Tailor resume
+    4. Validate (anti-hallucination)
+    5. Critic/Improve (optional, skip with skip_critic=True)
+    6. Re-validate after critic
+    7. Render LaTeX
+    8. Compile PDF (with 1-page retry loop)
+    9. ATS check + optional proofread
     """
 
     def _emit(msg: str) -> None:
@@ -112,19 +117,31 @@ def run_pipeline(
     bank = load_bank(settings.bank_path)
 
     # --- Stage 1: Parse JD ---
-    _emit("Stage 1/6: Parsing job description...")
+    _emit("Stage 1/9: Parsing job description...")
     result.jd = parse_jd(client, jd_text)
     _emit(f"  -> {result.jd.title} at {result.jd.company} ({result.jd.role_type})")
 
-    # --- Stage 2: Tailor resume ---
-    _emit("Stage 2/6: Tailoring resume...")
-    result.tailored = tailor_resume(client, bank, result.jd, settings)
+    # --- Stage 2: Enrich context ---
+    _emit("Stage 2/9: Building enriched context...")
+    tracker_db = settings.output_dir.parent / "data" / "market" / "skill_tracker.db"
+    enriched = build_enriched_context(
+        role_type=result.jd.role_type,
+        bank=bank,
+        tracker_db=tracker_db if tracker_db.exists() else None,
+        parsed_jd=result.jd,
+    )
+    boost_count = len(enriched.market_boost_skills)
+    _emit(f"  -> Guidelines loaded, {boost_count} market-boost skills")
+
+    # --- Stage 3: Tailor resume ---
+    _emit("Stage 3/9: Tailoring resume...")
+    result.tailored = tailor_resume(client, bank, result.jd, settings, enriched_context=enriched)
     n_exp = len(result.tailored.selected_experiences)
     n_proj = len(result.tailored.selected_projects)
     _emit(f"  -> Selected {n_exp} experiences, {n_proj} projects")
 
-    # --- Stage 3: Validate ---
-    _emit("Stage 3/6: Validating (anti-hallucination checks)...")
+    # --- Stage 4: Validate ---
+    _emit("Stage 4/9: Validating (anti-hallucination checks)...")
     result.validation = validate_tailored_resume(result.tailored, bank)
     if result.validation.warnings:
         for w in result.validation.warnings:
@@ -135,7 +152,7 @@ def run_pipeline(
         return result
     _emit("  -> Passed")
 
-    # --- Stage 4+5: Render LaTeX + Compile PDF (with retry loop) ---
+    # --- Stage 7+8: Render LaTeX + Compile PDF (with retry loop) ---
     out_dir = _make_output_dir(settings, result.jd)
     result.output_dir = out_dir
     min_fill_ratio = 0.85  # page must be at least 85% full
@@ -149,7 +166,7 @@ def run_pipeline(
         spacing_idx = min(attempt, len(SPACING_PRESETS) - 1)
         spacing = SPACING_PRESETS[spacing_idx]
 
-        _emit(f"Stage 4/6: Rendering LaTeX (attempt {attempt + 1})...")
+        _emit(f"Stage 7/9: Rendering LaTeX (attempt {attempt + 1})...")
         tex_content = render_latex(
             result.tailored, bank, settings.template_dir, spacing=spacing,
         )
@@ -157,7 +174,7 @@ def run_pipeline(
         tex_path.write_text(tex_content, encoding="utf-8")
         result.tex_path = tex_path
 
-        _emit("Stage 5/6: Compiling PDF...")
+        _emit("Stage 8/9: Compiling PDF...")
         try:
             pdf_path = compile_latex(tex_path, settings.latex_compiler)
         except RuntimeError as exc:
@@ -185,7 +202,7 @@ def run_pipeline(
                   "Re-tailoring with more content...")
             settings.max_bullets_per_experience = min(settings.max_bullets_per_experience + 1, 5)
             settings.max_bullets_per_project = min(settings.max_bullets_per_project + 1, 3)
-            result.tailored = tailor_resume(client, bank, result.jd, settings)
+            result.tailored = tailor_resume(client, bank, result.jd, settings, enriched_context=enriched)
             n_exp = len(result.tailored.selected_experiences)
             n_proj = len(result.tailored.selected_projects)
             _emit(f"  -> Re-tailored: {n_exp} experiences, {n_proj} projects")
@@ -200,9 +217,9 @@ def run_pipeline(
             _emit("  Could not fit resume to 1 page after all retries.")
             result.pdf_path = pdf_path
 
-    # --- Stage 6: ATS check + proofread ---
+    # --- Stage 9: ATS check + proofread ---
     if result.pdf_path and result.pdf_path.exists():
-        _emit("Stage 6/6: ATS check...")
+        _emit("Stage 9/9: ATS check...")
         result.ats_report = check_ats(result.pdf_path, result.jd)
         _emit(f"  -> ATS score: {result.ats_report.score}/100")
         if result.ats_report.keyword_misses:
