@@ -502,7 +502,9 @@ div[data-baseweb="menu"] {
 UI_MODELS: dict[str, str] = {
     "GPT-5.4": "gpt-5.4",
     "GPT-5.4 Mini": "gpt-5.4-mini",
-    "Claude Sonnet 4.6": "claude-sonnet",
+    "GPT-5.4 Nano": "gpt-5.4-nano",
+    "Claude Sonnet 4.6": "claude-sonnet-4-6",
+    "Claude Haiku 4.5": "claude-haiku-4-5",
 }
 
 

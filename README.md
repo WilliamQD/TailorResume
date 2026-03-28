@@ -75,7 +75,7 @@ scoop install tectonic
 python -m jobplanner tailor --jd job_description.txt
 
 # Use a specific model:
-python -m jobplanner tailor --jd job.txt --model claude-sonnet
+python -m jobplanner tailor --jd job.txt --model claude-sonnet-4-6
 ```
 
 ## CLI Reference
@@ -131,11 +131,12 @@ Use short aliases with `--model`:
 
 | Alias | Model |
 |-------|-------|
-| `gpt-5.4-mini` | OpenAI GPT-5.4 Mini |
 | `gpt-5.4` | OpenAI GPT-5.4 |
-| `gpt-4o` | OpenAI GPT-4o |
-| `claude-sonnet` | Claude Sonnet |
-| `claude-haiku` | Claude Haiku |
+| `gpt-5.4-mini` | OpenAI GPT-5.4 Mini |
+| `gpt-5.4-nano` | OpenAI GPT-5.4 Nano |
+| `claude-sonnet-4-6` | Claude Sonnet 4.6 |
+| `claude-haiku-4-5` | Claude Haiku 4.5 |
+| `claude-opus-4-6` | Claude Opus 4.6 |
 
 ### PowerShell SecretStore (Windows)
 

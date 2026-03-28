@@ -16,23 +16,22 @@ log = logging.getLogger(__name__)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 ModelAlias = Literal[
-    "claude-sonnet", "claude-haiku", "claude-opus",
-    "gpt-4o", "gpt-4o-mini", "gpt-5.4", "gpt-5.4-mini",
+    "claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-6",
+    "gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano",
 ]
 
 # Map friendly names → actual API model IDs
 MODEL_MAP: dict[str, str] = {
-    "claude-sonnet": "claude-sonnet-4-6",
-    "claude-haiku": "claude-haiku-4-5-20251001",
-    "claude-opus": "claude-opus-4-6",
-    "gpt-4o": "gpt-4o",
-    "gpt-4o-mini": "gpt-4o-mini",
+    "claude-sonnet-4-6": "claude-sonnet-4-6",
+    "claude-haiku-4-5": "claude-haiku-4-5-20251001",
+    "claude-opus-4-6": "claude-opus-4-6",
     "gpt-5.4": "gpt-5.4",
     "gpt-5.4-mini": "gpt-5.4-mini",
+    "gpt-5.4-nano": "gpt-5.4-nano",
 }
 
-CLAUDE_MODELS = {"claude-sonnet", "claude-haiku", "claude-opus"}
-OPENAI_MODELS = {"gpt-4o", "gpt-4o-mini", "gpt-5.4", "gpt-5.4-mini"}
+CLAUDE_MODELS = {"claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-6"}
+OPENAI_MODELS = {"gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano"}
 
 
 def _resolve_model(alias: str) -> str:

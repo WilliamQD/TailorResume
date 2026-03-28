@@ -21,7 +21,7 @@ Automated resume tailoring CLI. Paste a job description → get a tailored, ATS-
 ```bash
 pip install -e ".[dev]"                          # Install in dev mode
 python -m jobplanner tailor --jd job.txt         # Full pipeline (default: gpt-5.4-mini)
-python -m jobplanner tailor --jd job.txt --model claude-sonnet  # Use Claude
+python -m jobplanner tailor --jd job.txt --model claude-sonnet-4-6  # Use Claude
 python -m jobplanner bank validate               # Validate experience.yaml
 python -m jobplanner bank update                 # AI-assisted bank update
 python -m jobplanner bank show                   # Show bank summary
