@@ -1,0 +1,261 @@
+"""End-to-end pipeline orchestrator — ties all stages together."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
+
+import click
+
+from jobplanner.bank.loader import load_bank
+from jobplanner.bank.schema import ExperienceBank, ParsedJD, TailoredResume
+from jobplanner.checker.ats import ATSReport, check_ats
+from jobplanner.checker.proofreader import ProofreadResult, proofread
+from jobplanner.config import Settings
+from jobplanner.latex.compiler import compile_latex, get_page_count, get_page_fill_ratio
+from jobplanner.latex.renderer import SPACING_PRESETS, render_latex
+from jobplanner.llm import create_client
+from jobplanner.llm.base import LLMClient
+from jobplanner.parser.jd_parser import parse_jd
+from jobplanner.tailor.agent import tailor_resume
+from jobplanner.tailor.validator import ValidationResult, validate_tailored_resume
+
+
+@dataclass
+class PipelineResult:
+    """Everything produced by a pipeline run."""
+
+    jd: ParsedJD | None = None
+    tailored: TailoredResume | None = None
+    validation: ValidationResult | None = None
+    tex_path: Path | None = None
+    pdf_path: Path | None = None
+    ats_report: ATSReport | None = None
+    proofread_result: ProofreadResult | None = None
+    output_dir: Path | None = None
+
+
+def _trim_content(tailored: TailoredResume) -> str:
+    """Progressively trim content to fit 1 page. Returns description of what was trimmed, or ''."""
+    # 1. Drop a project if more than 2
+    if len(tailored.selected_projects) > 2:
+        dropped = tailored.selected_projects.pop()
+        return f"dropped project {dropped.source_id}"
+
+    # 2. Drop a bullet from the experience with the most bullets
+    exps_with_extra = [s for s in tailored.selected_experiences if len(s.bullets) > 2]
+    if exps_with_extra:
+        longest = max(exps_with_extra, key=lambda s: len(s.bullets))
+        longest.bullets.pop()
+        return f"trimmed a bullet from {longest.source_id}"
+
+    # 3. Drop a second project if still 2
+    if len(tailored.selected_projects) > 1:
+        dropped = tailored.selected_projects.pop()
+        return f"dropped project {dropped.source_id}"
+
+    # 4. Drop another bullet from any experience with more than 1
+    exps_with_extra = [s for s in tailored.selected_experiences if len(s.bullets) > 1]
+    if exps_with_extra:
+        longest = max(exps_with_extra, key=lambda s: len(s.bullets))
+        longest.bullets.pop()
+        return f"trimmed a bullet from {longest.source_id}"
+
+    # 5. Trim coursework
+    if tailored.selected_coursework:
+        for sc in tailored.selected_coursework:
+            if len(sc.courses) > 4:
+                sc.courses = sc.courses[:4]
+                return f"trimmed coursework for {sc.institution}"
+
+    return ""
+
+
+def _make_output_dir(settings: Settings, jd: ParsedJD) -> Path:
+    """Create a timestamped output directory."""
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    company = jd.company.replace(" ", "_").lower()[:30] or "unknown"
+    role = jd.role_type or "role"
+    dir_name = f"{date_str}_{company}_{role}"
+    out = settings.output_dir / dir_name
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def run_pipeline(
+    jd_text: str,
+    settings: Settings,
+    skip_proofread: bool = False,
+    on_progress: Callable[[str], None] | None = None,
+) -> PipelineResult:
+    """Execute the full tailoring pipeline.
+
+    Stages:
+    1. Parse JD
+    2. Tailor resume
+    3. Validate (anti-hallucination)
+    4. Render LaTeX
+    5. Compile PDF (with 1-page retry loop)
+    6. ATS check + optional proofread
+    """
+
+    def _emit(msg: str) -> None:
+        click.echo(msg)
+        if on_progress:
+            on_progress(msg)
+
+    result = PipelineResult()
+    client = create_client(settings)
+    bank = load_bank(settings.bank_path)
+
+    # --- Stage 1: Parse JD ---
+    _emit("Stage 1/6: Parsing job description...")
+    result.jd = parse_jd(client, jd_text)
+    _emit(f"  -> {result.jd.title} at {result.jd.company} ({result.jd.role_type})")
+
+    # --- Stage 2: Tailor resume ---
+    _emit("Stage 2/6: Tailoring resume...")
+    result.tailored = tailor_resume(client, bank, result.jd, settings)
+    n_exp = len(result.tailored.selected_experiences)
+    n_proj = len(result.tailored.selected_projects)
+    _emit(f"  -> Selected {n_exp} experiences, {n_proj} projects")
+
+    # --- Stage 3: Validate ---
+    _emit("Stage 3/6: Validating (anti-hallucination checks)...")
+    result.validation = validate_tailored_resume(result.tailored, bank)
+    if result.validation.warnings:
+        for w in result.validation.warnings:
+            icon = "X" if w.severity == "error" else "!"
+            _emit(f"  [{icon}] {w.source_id}[{w.bullet_index}]: {w.message}")
+    if not result.validation.passed:
+        _emit("  VALIDATION FAILED — halting pipeline. Review warnings above.")
+        return result
+    _emit("  -> Passed")
+
+    # --- Stage 4+5: Render LaTeX + Compile PDF (with retry loop) ---
+    out_dir = _make_output_dir(settings, result.jd)
+    result.output_dir = out_dir
+    min_fill_ratio = 0.85  # page must be at least 85% full
+
+    underfull_retried = False
+    pdf_path = None
+    max_attempts = settings.max_retries_for_one_page
+
+    for attempt in range(max_attempts):
+        # Use progressively tighter spacing, clamped to available presets
+        spacing_idx = min(attempt, len(SPACING_PRESETS) - 1)
+        spacing = SPACING_PRESETS[spacing_idx]
+
+        _emit(f"Stage 4/6: Rendering LaTeX (attempt {attempt + 1})...")
+        tex_content = render_latex(
+            result.tailored, bank, settings.template_dir, spacing=spacing,
+        )
+        tex_path = out_dir / "tailored.tex"
+        tex_path.write_text(tex_content, encoding="utf-8")
+        result.tex_path = tex_path
+
+        _emit("Stage 5/6: Compiling PDF...")
+        try:
+            pdf_path = compile_latex(tex_path, settings.latex_compiler)
+        except RuntimeError as exc:
+            _emit(f"  Compilation error: {exc}")
+            return result
+
+        pages = get_page_count(pdf_path)
+        if pages > 1:
+            # Once we've exhausted spacing presets, trim content progressively
+            if spacing_idx >= len(SPACING_PRESETS) - 1 and result.tailored:
+                trimmed = _trim_content(result.tailored)
+                if trimmed:
+                    _emit(f"  -> {pages} pages — {trimmed}")
+                    continue
+            _emit(f"  -> {pages} pages — too long, retrying with tighter spacing...")
+            continue
+
+        fill = get_page_fill_ratio(pdf_path)
+        _emit(f"  -> {pdf_path.name} ({pages} page, {fill:.0%} full)")
+        result.pdf_path = pdf_path
+
+        if fill < min_fill_ratio and not underfull_retried:
+            underfull_retried = True
+            _emit(f"  -> Page only {fill:.0%} full (need {min_fill_ratio:.0%}). "
+                  "Re-tailoring with more content...")
+            settings.max_bullets_per_experience = min(settings.max_bullets_per_experience + 1, 5)
+            settings.max_bullets_per_project = min(settings.max_bullets_per_project + 1, 3)
+            result.tailored = tailor_resume(client, bank, result.jd, settings)
+            n_exp = len(result.tailored.selected_experiences)
+            n_proj = len(result.tailored.selected_projects)
+            _emit(f"  -> Re-tailored: {n_exp} experiences, {n_proj} projects")
+            result.validation = validate_tailored_resume(result.tailored, bank)
+            if not result.validation.passed:
+                _emit("  Re-validation failed — using previous version.")
+                break
+            continue
+        break
+    else:
+        if pdf_path:
+            _emit("  Could not fit resume to 1 page after all retries.")
+            result.pdf_path = pdf_path
+
+    # --- Stage 6: ATS check + proofread ---
+    if result.pdf_path and result.pdf_path.exists():
+        _emit("Stage 6/6: ATS check...")
+        result.ats_report = check_ats(result.pdf_path, result.jd)
+        _emit(f"  -> ATS score: {result.ats_report.score}/100")
+        if result.ats_report.keyword_misses:
+            _emit(f"  -> Missing keywords: {', '.join(result.ats_report.keyword_misses[:10])}")
+        if result.ats_report.warnings:
+            for w in result.ats_report.warnings:
+                _emit(f"  [!] {w}")
+
+        if not skip_proofread:
+            _emit("  Proofreading...")
+            result.proofread_result = proofread(client, result.ats_report.extracted_text)
+            if result.proofread_result.clean:
+                _emit("  -> Clean")
+            else:
+                for issue in result.proofread_result.issues:
+                    _emit(f"  - {issue}")
+
+        # Detect inferred skills used in the tailored resume
+        inferred_names = {s.name.lower(): s for s in bank.inferred_skills}
+        inferred_used: list[dict] = []
+        if result.tailored:
+            skills_in_resume: set[str] = set()
+            for s in (result.tailored.skills.line1 + result.tailored.skills.line2
+                      + result.tailored.skills.line3):
+                skills_in_resume.add(s.lower())
+            for name_lower, inf in inferred_names.items():
+                if name_lower in skills_in_resume:
+                    inferred_used.append({
+                        "name": inf.name,
+                        "basis": inf.basis,
+                        "confidence": inf.confidence,
+                    })
+
+        # Write report
+        report = {
+            "company": result.jd.company,
+            "title": result.jd.title,
+            "role_type": result.jd.role_type,
+            "ats_score": result.ats_report.score,
+            "keyword_hits": result.ats_report.keyword_hits,
+            "keyword_misses": result.ats_report.keyword_misses,
+            "warnings": result.ats_report.warnings,
+            "sections_found": result.ats_report.sections_found,
+            "validation_passed": result.validation.passed if result.validation else None,
+            "validation_warnings": [
+                {"severity": w.severity, "source_id": w.source_id,
+                 "bullet_index": w.bullet_index, "message": w.message}
+                for w in (result.validation.warnings if result.validation else [])
+            ],
+            "inferred_skills_used": inferred_used,
+        }
+        report_path = out_dir / "report.json"
+        report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        _emit(f"\nOutput: {out_dir}")
+
+    return result

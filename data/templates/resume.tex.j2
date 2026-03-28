@@ -1,0 +1,107 @@
+\documentclass[10pt]{article}
+\usepackage[letterpaper,top=0.5in,bottom=0.5in,left=0.6in,right=0.6in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\tabcolsep}{0pt}
+\setlength{\lineskip}{0pt}
+
+% Section formatting
+\titleformat{\section}{\bfseries\large}{}{0pt}{}[\vspace{0.15em}\hrule]
+\titlespacing*{\section}{0pt}{<< section_space_before >>}{<< section_space_after >>}
+
+% List formatting
+\setlist[itemize]{leftmargin=1.15em,topsep=<< item_topsep >>,itemsep=<< item_itemsep >>,parsep=0em}
+
+\newcommand{\resumeHeader}[4]{%
+  \begin{center}
+    {\Large\bfseries #1}\par
+    \vspace{0.15em}
+    {\small #2 \;|\; #3 \;|\; #4}\par
+  \end{center}
+  \vspace{0.15em}
+}
+
+\newcommand{\entry}[4]{%
+  \textbf{#1}\hfill \textbf{#2}\par
+  \textit{#3}\hfill \textit{#4}\par
+}
+
+\newcommand{\entryEdu}[5]{%
+  \textbf{#1}\hfill \textbf{#2}\par
+  \textit{#3}\hfill {\small #5}\par
+}
+
+\begin{document}
+
+\resumeHeader
+  {<< meta.name >>}
+  {<< meta.location >> \;|\; << meta.phone >> \;|\; \href{mailto:<< meta.email >>}{<< meta.email >>}}
+  {\href{<< meta.linkedin >>}{LinkedIn}}
+  {\href{<< meta.github >>}{GitHub}}
+
+\section*{EDUCATION}
+<% for edu in education %>
+<% if edu.gpa %>
+\entryEdu{<< edu.institution >>}{<< edu.dates >>}{<< edu.degree >>}{}{GPA: << edu.gpa >>}
+<% else %>
+\entry{<< edu.institution >>}{<< edu.dates >>}{<< edu.degree >>}{}
+<% endif %>
+<% if edu.honors %>
+{\small << edu.honors | join(', ') >>}\par
+<% endif %>
+<% if edu.coursework %>
+{\small \textit{Relevant Coursework:} << edu.coursework | join(', ') >>}\par
+<% endif %>
+<% if not loop.last %>\vspace{0.15em}
+<% endif %>
+<% endfor %>
+
+\section*{SKILLS}
+{\small
+\textbf{<< skills.line1_label >>:} << skills.line1 | join(', ') >>\par
+\textbf{<< skills.line2_label >>:} << skills.line2 | join(', ') >>\par
+<% if skills.line3 %>
+\textbf{<< skills.line3_label >>:} << skills.line3 | join(', ') >>\par
+<% endif %>
+}
+
+\section*{PROFESSIONAL EXPERIENCE}
+<% for exp in experiences %>
+\textbf{<< exp.organization >>}\hfill \textbf{<< exp.location >>}\par
+\textit{<< exp.role >>}\hfill \textit{<< exp.dates >>}\par
+\begin{itemize}
+<% for bullet in exp.bullets %>
+  \item << bullet >>
+<% endfor %>
+\end{itemize}
+<% if not loop.last %>\vspace{0.15em}
+<% endif %>
+<% endfor %>
+
+<% if projects %>
+\section*{PROJECTS \& EXTRACURRICULARS}
+<% for proj in projects %>
+\textbf{<< proj.name >>}<% if proj.url %>~{\small(\href{<< proj.url >>}{Site})}<% endif %>\hfill \textit{<< proj.dates >>}\par
+<% if proj.subtitle %>\textit{<< proj.subtitle >>}\par
+<% endif %>
+\begin{itemize}
+<% for bullet in proj.bullets %>
+  \item << bullet >>
+<% endfor %>
+\end{itemize}
+<% if not loop.last %>\vspace{0.15em}
+<% endif %>
+<% endfor %>
+<% endif %>
+
+\end{document}

@@ -1,0 +1,235 @@
+# ============================================================================
+# EXPERIENCE BANK — Single source of truth for resume tailoring
+# ============================================================================
+# Bullets contain FACTUAL DESCRIPTIONS, not resume-ready text.
+# The tailor agent synthesizes resume bullets from these facts based on the JD.
+# ============================================================================
+# Copy this file to experience.yaml and fill in your own data.
+# experience.yaml is gitignored — it's your portable personal data file.
+# ============================================================================
+
+meta:
+  name: "JANE DOE"
+  email: "jane.doe@example.com"
+  phone: "(555) 123-4567"
+  linkedin: "https://www.linkedin.com/in/janedoe"
+  github: "https://github.com/janedoe"
+  location: "San Francisco, CA"
+  website: ""
+
+# ---------------------------------------------------------------------------
+education:
+  - institution: "University of California, Berkeley"
+    school: "College of Engineering"
+    degree: "Master of Science, Computer Science"
+    location: "Berkeley, CA"
+    dates: "August 2023 -- May 2025"
+    gpa: ""
+    coursework:
+      - "Machine Learning"
+      - "Natural Language Processing"
+      - "Distributed Systems"
+      - "Database Systems"
+      - "Statistical Learning Theory"
+    honors: []
+
+  - institution: "University of Michigan"
+    school: "College of Engineering"
+    degree: "Bachelor of Science in Computer Science, with Honors"
+    location: "Ann Arbor, MI"
+    dates: "September 2019 -- May 2023"
+    gpa: "3.85"
+    coursework:
+      - "Data Structures & Algorithms"
+      - "Operating Systems"
+      - "Computer Architecture"
+      - "Probability & Statistics"
+      - "Linear Algebra"
+      - "Software Engineering"
+    honors:
+      - "Dean's List (2020--2023)"
+      - "Major: Computer Science"
+
+# ---------------------------------------------------------------------------
+experience:
+  - id: "acme_analytics_swe"
+    organization: "Acme Analytics Inc."
+    role: "Software Engineer"
+    location: "San Francisco, CA"
+    dates: "June 2024 -- Present"
+    tags: ["swe", "data-engineering", "ml", "backend"]
+    bullets:
+      - description: >-
+          Built real-time data ingestion pipelines processing 500K+ events per
+          second from IoT sensors. Used Kafka for message streaming, Flink for
+          stream processing, and PostgreSQL for persistent storage. Implemented
+          exactly-once delivery guarantees using idempotent writes.
+        tech_stack: ["Python", "Kafka", "Apache Flink", "PostgreSQL"]
+        skills: ["data-engineering", "streaming", "distributed-systems", "backend"]
+        metrics: "500K+ events/sec throughput, exactly-once delivery"
+        context: "Core data infrastructure serving 50+ internal analytics consumers"
+
+      - description: >-
+          Designed and deployed a feature store serving ML models in production.
+          Implemented point-in-time-correct feature lookups to prevent data leakage
+          during model training. Reduced feature computation latency from hours
+          to minutes using materialized views and incremental aggregation.
+        tech_stack: ["Python", "Redis", "PostgreSQL", "Apache Airflow"]
+        skills: ["mlops", "feature-engineering", "database-design", "performance"]
+        metrics: "feature latency reduced from hours to minutes, serving 12 ML models"
+        context: "Enabled self-serve feature access for the data science team"
+
+      - description: >-
+          Implemented comprehensive observability stack with structured logging,
+          distributed tracing, and custom Grafana dashboards. Set up PagerDuty
+          alerting with runbooks for common failure modes. Reduced mean time to
+          resolution (MTTR) for pipeline incidents.
+        tech_stack: ["Grafana", "OpenTelemetry", "PagerDuty", "Python"]
+        skills: ["observability", "monitoring", "incident-response", "devops"]
+        metrics: "MTTR reduced by 60%, 15+ runbooks created"
+        context: "On-call rotation covers 3 engineers; observability was critical for scalability"
+
+  - id: "healthtech_lab_intern"
+    organization: "HealthTech Research Lab"
+    role: "Data Science Intern"
+    location: "Boston, MA"
+    dates: "May 2023 -- August 2023"
+    tags: ["ds", "ml", "healthcare", "research"]
+    bullets:
+      - description: >-
+          Developed predictive models for patient readmission risk using gradient
+          boosted trees and logistic regression on electronic health records.
+          Handled class imbalance with SMOTE and cost-sensitive learning.
+          Validated models using stratified k-fold cross-validation.
+        tech_stack: ["Python", "scikit-learn", "XGBoost", "pandas"]
+        skills: ["machine-learning", "healthcare", "classification", "model-validation"]
+        metrics: "AUC-ROC improved from 0.72 to 0.84 over baseline"
+        context: "Collaboration with hospital clinical informatics team"
+
+      - description: >-
+          Built automated ETL pipelines to extract, clean, and transform raw EHR
+          data into analysis-ready datasets. Standardized diagnosis codes (ICD-10)
+          and medication records across multiple hospital systems.
+        tech_stack: ["Python", "SQL", "Apache Airflow"]
+        skills: ["etl", "data-engineering", "healthcare", "data-quality"]
+        metrics: "processed 2M+ patient records across 3 hospital systems"
+        context: "Data quality was a major bottleneck before pipeline automation"
+
+# ---------------------------------------------------------------------------
+projects:
+  # Set anchor: true on projects that should ALWAYS appear on your resume,
+  # even if their tags don't match the JD. These typically demonstrate
+  # active coding, modern tech, and breadth.
+  - id: "portfolio_tracker"
+    name: "Portfolio Tracker"
+    dates: "2024 -- Present"
+    url: "https://github.com/janedoe/portfolio-tracker"
+    tags: ["fullstack", "swe", "finance"]
+    anchor: true   # <-- always include regardless of JD tag overlap
+    bullets:
+      - description: >-
+          Built a full-stack personal finance dashboard with Next.js and
+          TypeScript. Features include real-time stock pricing via API
+          integration, portfolio performance analytics, and transaction history.
+          Backed by PostgreSQL with 20+ API routes.
+        tech_stack: ["Next.js", "TypeScript", "PostgreSQL", "Tailwind CSS"]
+        skills: ["fullstack", "web-development", "api-design", "database-design"]
+        metrics: "20+ API routes, production deployment"
+        context: "Personal project used daily for tracking real investments"
+
+      - description: >-
+          Implemented authentication with session cookies, rate limiting,
+          and role-based access control. Docker containerization with
+          CI/CD pipeline for automated testing and deployment.
+        tech_stack: ["Docker", "GitHub Actions", "Next.js"]
+        skills: ["security", "authentication", "ci-cd", "devops"]
+        metrics: "automated CI/CD pipeline, Docker deployment"
+        context: "Security-first design for financial data"
+
+  - id: "ml_pipeline"
+    name: "Automated ML Competition Pipeline"
+    dates: "2024 -- Present"
+    url: "https://github.com/janedoe/ml-pipeline"
+    tags: ["ml", "mlops", "automation", "ds"]
+    anchor: true
+    bullets:
+      - description: >-
+          Built an end-to-end ML pipeline for automated competition submissions.
+          Trains ensemble models using walk-forward cross-validation with purge
+          gaps. Automated weekly submissions via GitHub Actions cron jobs.
+        tech_stack: ["Python", "LightGBM", "Polars", "GitHub Actions"]
+        skills: ["machine-learning", "mlops", "automation", "ensemble-methods"]
+        metrics: "automated weekly submissions, walk-forward CV"
+        context: "Fully hands-off pipeline for ML competitions"
+
+      - description: >-
+          Integrated Weights & Biases for experiment tracking and artifact
+          versioning. Pre-submission quality gates validate predictions before
+          upload. Failures auto-create GitHub Issues for debugging.
+        tech_stack: ["Weights & Biases", "GitHub Actions", "Python"]
+        skills: ["experiment-tracking", "quality-assurance", "monitoring"]
+        metrics: "automated quality gates, W&B experiment tracking"
+        context: "MLOps best practices for reproducibility"
+
+  - id: "nlp_translation"
+    name: "Neural Machine Translation for Idiomatic Expressions"
+    dates: "March 2023 -- April 2023"
+    url: ""
+    tags: ["nlp", "ml", "research"]
+    bullets:
+      - description: >-
+          Fine-tuned multilingual transformer models on a dataset of 4,000+
+          idiomatic expressions for translation tasks. Evaluated using BLEU
+          and METEOR metrics, comparing fine-tuned vs zero-shot baselines.
+        tech_stack: ["PyTorch", "Hugging Face Transformers", "Python"]
+        skills: ["fine-tuning", "nlp", "deep-learning", "evaluation"]
+        metrics: "4,000+ idiomatic expressions, BLEU/METEOR evaluation"
+        context: "Course research project on culturally nuanced translation"
+
+# ---------------------------------------------------------------------------
+skills:
+  languages:
+    - "Python"
+    - "TypeScript"
+    - "SQL"
+    - "R"
+    - "Java"
+    - "C++"
+  frameworks:
+    - "PyTorch"
+    - "scikit-learn"
+    - "pandas"
+    - "Polars"
+    - "LightGBM"
+    - "FastAPI"
+    - "Next.js"
+    - "Apache Flink"
+    - "Hugging Face Transformers"
+  tools:
+    - "Docker"
+    - "Kubernetes"
+    - "GitHub Actions"
+    - "Git"
+    - "PostgreSQL"
+    - "Redis"
+    - "Kafka"
+    - "Weights & Biases"
+    - "Grafana"
+
+# ---------------------------------------------------------------------------
+# INFERRED SKILLS — derived from coursework or closely related experience.
+# These may appear in the skills section but NEVER as fabricated experience bullets.
+# ---------------------------------------------------------------------------
+inferred_skills:
+  - name: "Hypothesis Testing"
+    basis: "STAT 200 Probability & Statistics, STAT 301 Statistical Inference"
+    confidence: "high"
+  - name: "Linear Regression"
+    basis: "STAT 301, CS 489 Statistical Learning Theory"
+    confidence: "high"
+  - name: "Deep Learning"
+    basis: "CS 682 Neural Networks (CNNs, RNNs, Transformers), plus project work"
+    confidence: "high"
+  - name: "Distributed Systems"
+    basis: "CS 677 Distributed Systems (consensus, replication, fault tolerance)"
+    confidence: "moderate"

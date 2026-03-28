@@ -1,0 +1,61 @@
+Overview
+We are looking for 2 Data & Applied Scientists II to help teams make better product and business decisions through rigorous experimentation, strong statistical thinking, and practical use of AI in everyday analytical work.
+
+In this role, you will design and analyze A/B experiments, translate results into clear decisions, and continuously evolve how experimentation is done.
+
+This is a hands-on role for someone who enjoys learning, questioning assumptions, and applying data science to real-world decisions at scale. This is not a "reporting" role. It is a decision-making role, where experimentation, judgment, and AI-enabled workflows come together to shape real outcomes.
+
+Microsoft's mission is to empower every person and every organization on the planet to achieve more. As employees we come together with a growth mindset, innovate to empower others, and collaborate to realize our shared goals. Each day we build on our values of respect, integrity, and accountability to create a culture of inclusion where everyone can thrive at work and beyond.
+
+Starting January 26, 2026, Microsoft AI (MAI) employees who live within a 50-mile commute of a designated Microsoft office in the U.S. or 25-mile commute of a non-U.S., country-specific location are expected to work from the office at least four days per week. This expectation is subject to local law and may vary by jurisdiction.
+
+Responsibilities
+Experimentation & A/B Testing
+Design, analyze, and interpret A/B experiments end-to-end, from hypothesis formulation to final decision
+Choose appropriate metrics, success criteria, and evaluation windows based on user behavior and business context.
+Identify and diagnose common experimentation issues (e.g., bias, interference, power limitations, metric sensitivity).
+Communicate experimental results clearly, including uncertainty, limitations, and trade-offs.
+Decision Science & Insights
+Go beyond "did it move the metric?" to explain why results happened and what decision should be made
+Combine experimental evidence with observational analysis when appropriate
+Partner closely with product, engineering, and design stakeholders to influence direction using data
+AI-First Analytical Work
+Use AI tools to accelerate analysis, exploration, and insight generation (e.g., faster hypothesis testing, code generation, narrative summaries).
+Continuously evaluate where AI can improve experimentation workflows, without compromising rigor or correctness.
+Develop good judgment about when to rely on automation vs. when deep statistical reasoning is required.
+Learning & Craft Development
+Stay current on experimentation methods, causal inference, and applied statistics.
+Learn and adopt new tools, techniques, and best practices quickly.
+Contribute to shared standards and documentation that improve how teams run experiments and make decisions.
+
+Qualifications
+Required Qualifications:
+Doctorate in Data Science, Mathematics, Statistics, Econometrics, Economics, Operations Research, Computer Science, or related field
+OR Master's Degree in Data Science, Mathematics, Statistics, Econometrics, Economics, Operations Research, Computer Science, or related field AND 1+ year(s) data-science experience (e.g., managing structured and unstructured data, applying statistical techniques and reporting results) or consulting experience
+OR Bachelor's Degree in Data Science, Mathematics, Statistics, Econometrics, Economics, Operations Research, Computer Science, or related field AND 2+ years data-science experience (e.g., managing structured and unstructured data, applying statistical techniques and reporting results)
+OR equivalent experience.
+
+Preferred Qualifications:
+Experimentation & A/B Testing
+Demonstrated experience designing, analyzing, and interpreting A/B experiments end-to-end.
+Solid understanding of experimental design concepts, including hypotheses, control/treatment comparisons, metrics, and evaluation windows.
+Ability to identify and reason about common experimentation challenges such as bias, interference, insufficient power, and metric sensitivity.
+Experience communicating experimental results clearly, including uncertainty, limitations, and trade-offs.
+Statistical & Analytical Foundations
+Solid foundation in applied statistics (e.g., hypothesis testing, confidence intervals, variance, and basic causal reasoning)
+Ability to work with real-world data that is noisy, incomplete, or imperfect, and still produce reliable insights
+Solid judgment in selecting appropriate metrics and analytical approaches for decision-making
+AI-Enabled Analytical Work
+Experience using AI-assisted tools to support data analysis, experimentation, or insight generation.
+Ability to thoughtfully integrate AI into everyday analytical workflows while maintaining statistical rigor.
+Curiosity and openness to experimenting with new AI capabilities to improve speed, quality, or clarity of analysis.
+Technical Skills
+Proficiency in SQL for data extraction and analysis.
+Experience with at least one analytical programming language (e.g., Python or R).
+Familiarity with experimentation analysis workflows, dashboards, or analytical tooling.
+Communication & Collaboration
+Ability to explain complex analytical concepts and experimental results to non-technical audiences.
+Solid written and verbal communication skills focused on driving decisions, not just reporting results.
+Experience working cross-functionally with product, engineering, or design partners.
+
+#MicrosoftAI #advancedstatistics #A/B #mathematicalEngineering #probabilities #bayesian #frequentist #HET #risk #hypothesis #variance #causation #effectSize #montecarlo #simulations #prior #uncertainty

@@ -1,0 +1,32 @@
+Data Scientist - Financial Analytics
+XYZ Capital Partners | New York, NY
+
+About the Role:
+We are seeking a Data Scientist to join our Financial Analytics team. You will
+build and maintain predictive models, data pipelines, and analytical tools that
+drive investment decisions. The ideal candidate has strong Python skills,
+experience with machine learning, and familiarity with financial data.
+
+Responsibilities:
+- Develop and deploy machine learning models for financial prediction and risk analysis
+- Build and optimize data pipelines (ETL) for processing large-scale financial datasets
+- Collaborate with portfolio managers and research analysts to translate business
+  questions into analytical solutions
+- Implement NLP-based analysis of earnings calls, SEC filings, and financial news
+- Design and maintain dashboards and automated reporting systems
+- Conduct statistical analysis and hypothesis testing to validate model performance
+
+Requirements:
+- Master's degree in Statistics, Computer Science, Data Science, or related quantitative field
+- 0-3 years of experience in data science, machine learning, or quantitative research
+- Strong proficiency in Python (pandas, NumPy, scikit-learn, PyTorch or TensorFlow)
+- Experience with SQL and large-scale data processing (Spark, PySpark preferred)
+- Familiarity with NLP techniques and LLM-based applications
+- Experience with cloud computing or HPC environments
+- Strong communication skills and ability to present findings to non-technical stakeholders
+
+Nice to have:
+- Experience with financial data (10-K filings, earnings calls, market data)
+- Familiarity with RAG pipelines or vector databases
+- Experience with Docker/Kubernetes for model deployment
+- Knowledge of time-series analysis and forecasting

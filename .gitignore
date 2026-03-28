@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Personal experience data (see experience.example.yaml for schema)
+data/experience.yaml
+
+# Output
+output/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Tectonic cache
+.tectonic/
