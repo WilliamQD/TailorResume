@@ -2,17 +2,26 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pytest
+
+from jobplanner.bank.schema import ParsedJD
 from jobplanner.tailor.enrichment import EnrichedContext, build_enriched_context
 
+_GUIDELINES_DIR = Path(__file__).resolve().parent.parent / "data" / "guidelines"
 
-GUIDELINES_DIR = Path("data/guidelines")
-
-
-@pytest.mark.skipif(
-    not (GUIDELINES_DIR / "resume_rules.md").exists(),
-    reason="data/guidelines not yet created",
+_GUIDELINES_PRESENT = (
+    (_GUIDELINES_DIR / "resume_rules.md").exists()
+    and (_GUIDELINES_DIR / "exemplary_bullets.yaml").exists()
+    and (_GUIDELINES_DIR / "resume_structures.yaml").exists()
 )
+
+pytestmark = pytest.mark.skipif(
+    not _GUIDELINES_PRESENT,
+    reason="data/guidelines files not yet created",
+)
+
+
 def test_enriched_context_loads_guidelines(minimal_bank, minimal_jd):
     ctx = build_enriched_context(
         role_type="swe",
@@ -62,11 +71,19 @@ def test_enriched_context_no_market_boost_when_db_missing(minimal_bank, minimal_
 
 def test_enriched_context_graceful_missing_sector(minimal_bank, minimal_jd):
     """Falls back gracefully if a sector has no exemplary bullets."""
-    minimal_jd.role_type = "other"
+    jd = ParsedJD(
+        title="Unknown Role",
+        company="TestCo",
+        role_type="other",
+        required_skills=[],
+        preferred_skills=[],
+        keywords=[],
+        seniority="entry",
+    )
     ctx = build_enriched_context(
         role_type="other",
         bank=minimal_bank,
         tracker_db=None,
-        parsed_jd=minimal_jd,
+        parsed_jd=jd,
     )
     assert isinstance(ctx, EnrichedContext)  # no crash

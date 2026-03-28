@@ -119,10 +119,10 @@ def _load_structure_template(role_type: str) -> str:
         return ""
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
 
-    fallback_map = {"biostats": "biostats", "research": "research", "other": "swe"}
+    fallback_map = {"biostats": "biostats", "research": "research"}
     key = fallback_map.get(role_type, role_type)
     if key not in data:
-        key = "swe"  # final fallback
+        return ""  # unknown role type — no template available
     template = data[key]
 
     lines = [f"### Resume Strategy for {role_type.upper()} Roles\n"]
