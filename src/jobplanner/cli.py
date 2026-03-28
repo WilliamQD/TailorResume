@@ -30,15 +30,16 @@ def cli(ctx: click.Context, model: str | None) -> None:
 @cli.command()
 @click.option("--jd", required=True, type=click.Path(exists=True), help="Path to job description text file")
 @click.option("--skip-proofread", is_flag=True, help="Skip the LLM proofreading step")
+@click.option("--skip-critic", is_flag=True, help="Skip the critic/improve pass")
 @click.pass_context
-def tailor(ctx: click.Context, jd: str, skip_proofread: bool) -> None:
+def tailor(ctx: click.Context, jd: str, skip_proofread: bool, skip_critic: bool) -> None:
     """Run the full resume tailoring pipeline."""
     from jobplanner.pipeline import run_pipeline
 
     settings = ctx.obj["settings"]
     jd_text = Path(jd).read_text(encoding="utf-8")
 
-    result = run_pipeline(jd_text, settings, skip_proofread=skip_proofread)
+    result = run_pipeline(jd_text, settings, skip_proofread=skip_proofread, skip_critic=skip_critic)
 
     if result.pdf_path and result.pdf_path.exists():
         click.echo(f"\nResume: {result.pdf_path}")
@@ -219,3 +220,80 @@ def bank_edit(ctx: click.Context) -> None:
     """Open experience.yaml in your default editor."""
     settings = ctx.obj["settings"]
     click.edit(filename=str(settings.bank_path))
+
+
+# -------------------------------------------------------------------------
+# market — subcommands for market intelligence
+# -------------------------------------------------------------------------
+
+@cli.group()
+def market() -> None:
+    """Market intelligence — skill demand analysis from processed JDs."""
+    pass
+
+
+@market.command("report")
+@click.option("--sector", default=None, help="Role type to report on (swe, ds, mle, de, finance, analyst)")
+@click.option("--cross-sector", "cross_sector", is_flag=True, help="Show cross-sector comparison")
+@click.pass_context
+def market_report(ctx: click.Context, sector: str | None, cross_sector: bool) -> None:
+    """Show skill demand report and gap analysis from processed JDs."""
+    from jobplanner.bank.loader import load_bank
+    from jobplanner.market.report import format_cross_sector_report, format_sector_report
+    from jobplanner.market.tracker import get_jd_count
+
+    settings = ctx.obj["settings"]
+    bank = load_bank(settings.bank_path)
+    db_path = settings.output_dir.parent / "data" / "market" / "skill_tracker.db"
+
+    if not db_path.exists():
+        click.echo("No market data yet. Run 'jobplanner tailor' on some JDs to accumulate data.")
+        return
+
+    if cross_sector:
+        click.echo(format_cross_sector_report(db_path, bank))
+        return
+
+    if sector:
+        click.echo(format_sector_report(db_path, sector, bank))
+    else:
+        # Show summary of all sectors with data
+        for rt in ["swe", "ds", "mle", "de", "finance", "analyst", "biostats"]:
+            n = get_jd_count(db_path, rt)
+            if n > 0:
+                click.echo(f"\n{rt.upper()}: {n} JDs")
+        click.echo("\nUse --sector <type> for detailed report, --cross-sector for comparison.")
+
+
+@market.command("suggest-projects")
+@click.option("--sector", required=True, help="Role type to suggest projects for")
+@click.pass_context
+def suggest_projects(ctx: click.Context, sector: str) -> None:
+    """Suggest projects to fill skill gaps for a target sector."""
+    from jobplanner.bank.loader import load_bank
+    from jobplanner.llm import create_client
+    from jobplanner.market.report import suggest_projects_prompt
+    from jobplanner.market.tracker import get_skill_gaps
+
+    settings = ctx.obj["settings"]
+    bank = load_bank(settings.bank_path)
+    client = create_client(settings)
+    db_path = settings.output_dir.parent / "data" / "market" / "skill_tracker.db"
+
+    if not db_path.exists():
+        click.echo("No market data yet. Run the pipeline on some JDs first.")
+        return
+
+    gaps = get_skill_gaps(db_path, sector, bank)
+    prompt = suggest_projects_prompt(sector, gaps, bank)
+
+    if not prompt:
+        click.echo(f"No significant skill gaps found for {sector.upper()}. Your bank looks comprehensive!")
+        return
+
+    click.echo(f"\nGenerating project suggestions for {sector.upper()} gaps...\n")
+    response = client.complete_text(
+        system="You are a career advisor. Be specific and practical.",
+        user=prompt,
+    )
+    click.echo(response)

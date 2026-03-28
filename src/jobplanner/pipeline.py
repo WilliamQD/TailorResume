@@ -14,6 +14,7 @@ from jobplanner.bank.loader import load_bank
 from jobplanner.bank.schema import ExperienceBank, ParsedJD, TailoredResume
 from jobplanner.checker.ats import ATSReport, check_ats
 from jobplanner.checker.proofreader import ProofreadResult, proofread
+from jobplanner.checker.critic import CriticResult, run_critic
 from jobplanner.config import Settings
 from jobplanner.latex.compiler import compile_latex, get_page_count, get_page_fill_ratio
 from jobplanner.latex.renderer import SPACING_PRESETS, render_latex
@@ -32,6 +33,7 @@ class PipelineResult:
     jd: ParsedJD | None = None
     tailored: TailoredResume | None = None
     validation: ValidationResult | None = None
+    critic_result: CriticResult | None = None
     tex_path: Path | None = None
     pdf_path: Path | None = None
     ats_report: ATSReport | None = None
@@ -152,6 +154,29 @@ def run_pipeline(
         return result
     _emit("  -> Passed")
 
+    # --- Stage 5: Critic/Improve (optional) ---
+    if not skip_critic:
+        _emit("Stage 5/9: Critic pass (improving bullet quality)...")
+        try:
+            critic_result = run_critic(client, result.tailored, bank, result.jd, enriched)
+            result.critic_result = critic_result
+            _emit(f"  -> {critic_result.summary or 'Complete'}")
+            if critic_result.bank_suggestions:
+                high = sum(1 for s in critic_result.bank_suggestions if s.priority == "high")
+                _emit(f"  -> {len(critic_result.bank_suggestions)} bank suggestions ({high} high priority)")
+            # Re-validate the improved resume
+            re_validation = validate_tailored_resume(critic_result.improved_resume, bank)
+            if re_validation.passed:
+                result.tailored = critic_result.improved_resume
+                result.validation = re_validation
+                _emit("  -> Re-validation passed — using improved resume")
+            else:
+                _emit("  -> Re-validation failed — keeping pre-critic resume")
+        except Exception as exc:
+            _emit(f"  -> Critic error ({exc}) — continuing without improvement")
+    else:
+        _emit("Stage 5/9: Critic pass skipped")
+
     # --- Stage 7+8: Render LaTeX + Compile PDF (with retry loop) ---
     out_dir = _make_output_dir(settings, result.jd)
     result.output_dir = out_dir
@@ -270,6 +295,20 @@ def run_pipeline(
                 for w in (result.validation.warnings if result.validation else [])
             ],
             "inferred_skills_used": inferred_used,
+            "bank_improvement_suggestions": [
+                {
+                    "source_id": s.source_id,
+                    "bullet_index": s.bullet_index,
+                    "issue": s.issue,
+                    "suggestion": s.suggestion,
+                    "priority": s.priority,
+                }
+                for s in (result.critic_result.bank_suggestions if result.critic_result else [])
+            ],
+            "enrichment_tokens": len(enriched.guidelines_excerpt + enriched.exemplary_bullets
+                                     + enriched.structure_template) // 4,
+            "market_boosted_skills": enriched.market_boost_skills,
+            "critic_summary": result.critic_result.summary if result.critic_result else None,
         }
         report_path = out_dir / "report.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")

@@ -549,6 +549,14 @@ with st.sidebar:
 
     st.markdown("---")
 
+    skip_critic_ui = st.checkbox(
+        "Skip critic pass",
+        value=False,
+        help="Faster but lower quality — skips the quality improvement pass",
+    )
+
+    st.markdown("---")
+
     # Bank summary
     with st.expander("Experience Bank", expanded=False):
         try:
@@ -612,6 +620,7 @@ if generate and jd_text.strip():
             result = run_pipeline(
                 jd_text,
                 settings,
+                skip_critic=skip_critic_ui,
                 on_progress=on_progress,
             )
             st.session_state["result"] = result
@@ -755,3 +764,18 @@ if result and result.pdf_path and result.pdf_path.exists():
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+
+        # Bank improvement suggestions from critic pass
+        if result.critic_result and result.critic_result.bank_suggestions:
+            suggs = result.critic_result.bank_suggestions
+            high = [s for s in suggs if s.priority == "high"]
+            with st.expander(f"Improve Your Experience Bank ({len(suggs)} suggestions)", expanded=bool(high)):
+                for s in sorted(suggs, key=lambda x: {"high": 0, "medium": 1, "low": 2}[x.priority]):
+                    color = {"high": "var(--danger)", "medium": "var(--warning)", "low": "var(--text-muted)"}[s.priority]
+                    st.markdown(
+                        f'<div class="inf-card">'
+                        f'<span class="inf-name" style="color:{color}">[{s.priority.upper()}] {s.source_id}[{s.bullet_index}]</span>'
+                        f'<div class="inf-basis"><b>{s.issue}:</b> {s.suggestion}</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
