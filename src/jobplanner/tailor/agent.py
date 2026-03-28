@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import yaml
+
+if TYPE_CHECKING:
+    from jobplanner.tailor.enrichment import EnrichedContext
 
 from jobplanner.bank.schema import (
     ExperienceBank,
@@ -131,6 +136,7 @@ def tailor_resume(
     bank: ExperienceBank,
     jd: ParsedJD,
     settings: Settings,
+    enriched_context: "EnrichedContext | None" = None,
 ) -> TailoredResume:
     """Run the tailoring agent — returns a TailoredResume."""
     bank_yaml = _bank_to_yaml_snippet(bank, jd)
@@ -141,6 +147,7 @@ def tailor_resume(
         bank_yaml=bank_yaml,
         max_exp_bullets=settings.max_bullets_per_experience,
         max_proj_bullets=settings.max_bullets_per_project,
+        enriched_context=enriched_context,
     )
 
     return client.complete(

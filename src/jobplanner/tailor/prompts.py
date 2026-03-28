@@ -1,5 +1,12 @@
 """System and user prompts for the resume tailoring agent."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from jobplanner.tailor.enrichment import EnrichedContext
+
 TAILOR_SYSTEM_PROMPT = """\
 You are an expert resume tailoring assistant. You help a job applicant SYNTHESIZE
 resume bullets from factual descriptions of their work, tailored to a specific
@@ -141,8 +148,35 @@ def build_tailor_user_prompt(
     bank_yaml: str,
     max_exp_bullets: int = 3,
     max_proj_bullets: int = 2,
+    enriched_context: "EnrichedContext | None" = None,
 ) -> str:
     """Build the user message for the tailoring call."""
+    # Build optional enrichment block
+    enrichment_block = ""
+    if enriched_context:
+        parts = []
+        if enriched_context.structure_template:
+            parts.append(enriched_context.structure_template)
+        if enriched_context.exemplary_bullets:
+            parts.append(enriched_context.exemplary_bullets)
+        if enriched_context.guidelines_excerpt:
+            parts.append("### Resume Writing Rules (Expert Guidelines)\n\n"
+                         + enriched_context.guidelines_excerpt)
+        if enriched_context.market_boost_skills:
+            skill_list = ", ".join(enriched_context.market_boost_skills)
+            parts.append(
+                f"### Market Intelligence\n\nThe following skills appear frequently in "
+                f"this sector's JDs based on market data. The candidate has these skills — "
+                f"consider mentioning them naturally if relevant, even if this specific JD "
+                f"doesn't list them: {skill_list}"
+            )
+        if parts:
+            enrichment_block = (
+                "\n## Quality Guidance\n\n"
+                + "\n\n---\n\n".join(parts)
+                + "\n"
+            )
+
     return f"""\
 ## Job Description Summary
 
@@ -153,7 +187,7 @@ def build_tailor_user_prompt(
 ```yaml
 {bank_yaml}
 ```
-
+{enrichment_block}
 ## Constraints
 
 - Maximum {max_exp_bullets} bullets per experience
