@@ -312,6 +312,15 @@ def run_pipeline(
         }
         report_path = out_dir / "report.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+        # Accumulate market data (silent sub-step after report write)
+        try:
+            from jobplanner.market.tracker import accumulate_jd
+            accumulate_jd(tracker_db, result.jd)
+            _emit("  -> Market data recorded")
+        except Exception as exc:
+            _emit(f"  -> Market accumulation skipped: {exc}")
+
         _emit(f"\nOutput: {out_dir}")
 
     return result

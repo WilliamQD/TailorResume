@@ -30,3 +30,6 @@ Thumbs.db
 
 # Tectonic cache
 .tectonic/
+
+# Market intelligence DB (personal data, not tracked)
+data/market/
