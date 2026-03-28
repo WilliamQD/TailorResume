@@ -1,0 +1,187 @@
+# Resume structure templates per sector.
+# section_order is prompt guidance for emphasis/allocation — the LaTeX template
+# has a fixed order; dynamic reordering is deferred to a future implementation.
+# top_third_strategy: what a hiring manager sees in the first 6-second scan.
+
+swe:
+  story_arc: >
+    "I build systems that scale and ship reliably."
+    Lead with the most technically impressive or highest-scale experience.
+    Show progression: individual contributor → system owner → cross-team impact.
+    The resume should answer: can this person own a service end-to-end?
+  section_order: [skills, experience, projects, education]
+  space_allocation:
+    skills: "~10% — 3 lines, tools-heavy, JD-required tech front-loaded"
+    experience: "~55% — this is where SWE resumes win or lose"
+    projects: "~20% — shows initiative, breadth, and active coding"
+    education: "~15% — degree + coursework (CS/systems/algo courses only)"
+  top_third_strategy: >
+    Name/contact → Skills (put the languages + frameworks the JD lists first) →
+    Opening bullets of most impressive experience. A SWE recruiter ctrl+F for
+    specific tech; the first experience's opening bullet sets the quality bar.
+    Scanning for: languages, frameworks, scale numbers (req/s, users, ms latency).
+  bullet_ordering: "Lead with architecture/scale decisions, then impact metrics, then team/process"
+  coursework_strategy: >
+    Prioritize: algorithms, data structures, systems, OS, distributed systems, databases.
+    Cut: intro programming, writing, general electives. Max 5 courses for SWE roles.
+  skills_label_guidance: >
+    Line 1: Languages (Python, Go, Java, C++, TypeScript, SQL)
+    Line 2: Frameworks & Infra (React, FastAPI, Kubernetes, Docker, AWS, Kafka)
+    Line 3: Practices & Tools (Git, CI/CD, gRPC, PostgreSQL, Redis, Terraform)
+
+ds:
+  story_arc: >
+    "I turn messy data into rigorous decisions."
+    Lead with the most methodologically sophisticated analysis or model.
+    Show: rigorous methods → real-world impact → domain fluency.
+    The resume should answer: can this person design a valid study and interpret results?
+  section_order: [education, skills, experience, projects]
+  space_allocation:
+    education: "~20% — DS values credentials; Yale MS + strong courses signals rigor"
+    skills: "~10% — methods first (statistical), tools second"
+    experience: "~50% — methodology-driven bullets"
+    projects: "~20% — independent analytical thinking, domain breadth"
+  top_third_strategy: >
+    Name/contact → Education (institution + degree + GPA signals rigor immediately) →
+    Skills (statistical methods first: Bayesian, survival analysis, mixed-effects, etc.) →
+    Opening bullet of strongest experience.
+    A DS hiring manager scans for: statistical methods, study design keywords, domain.
+  bullet_ordering: "Lead with methodology/rigor, then results/metrics, then tools used"
+  coursework_strategy: >
+    Prioritize: statistics, ML, biostatistics, causal inference, Bayesian methods,
+    linear models, survival analysis, experimental design.
+    Cut: intro stats, general writing, non-quantitative electives. Max 6 per school.
+  skills_label_guidance: >
+    Line 1: Statistical Methods (Bayesian Inference, Survival Analysis, Mixed-Effects Models, A/B Testing)
+    Line 2: ML & Modeling (scikit-learn, PyTorch, XGBoost, Stan, R, Python)
+    Line 3: Data & Tools (SQL, Spark, Pandas, ggplot2, SAS, Git)
+
+mle:
+  story_arc: >
+    "I build ML systems that work reliably in production."
+    Balance model development AND infrastructure concerns.
+    Show the full ML lifecycle: data → training → evaluation → deployment → monitoring.
+    The resume should answer: can this person own a model from notebook to production?
+  section_order: [skills, experience, projects, education]
+  space_allocation:
+    skills: "~10% — ML frameworks + infra tools, both must be present"
+    experience: "~55% — show full lifecycle, not just training"
+    projects: "~20% — end-to-end ML projects signal initiative"
+    education: "~15%"
+  top_third_strategy: >
+    Name/contact → Skills (ML frameworks + deployment tech) →
+    Opening bullets of most production-oriented experience.
+    MLE recruiters scan for: PyTorch/TF, serving infra (TorchServe, Triton, vLLM),
+    experiment tracking (MLflow, W&B), feature stores, latency numbers.
+  bullet_ordering: "Lead with production impact/scale, then model improvement, then methodology"
+  coursework_strategy: >
+    Prioritize: ML, deep learning, systems, distributed computing, probability/stats.
+    Max 5 courses.
+  skills_label_guidance: >
+    Line 1: ML Frameworks (PyTorch, TensorFlow, Hugging Face, scikit-learn, XGBoost)
+    Line 2: MLOps & Infra (MLflow, Kubeflow, Docker, Kubernetes, AWS SageMaker, Triton)
+    Line 3: Languages & Data (Python, SQL, Spark, Redis, PostgreSQL, Git)
+
+de:
+  story_arc: >
+    "I build data infrastructure that doesn't break at scale."
+    Lead with highest-throughput or most business-critical pipeline.
+    Show: reliability → scale → freshness/quality trade-offs.
+  section_order: [skills, experience, projects, education]
+  space_allocation:
+    skills: "~10% — data tech stack must match JD exactly"
+    experience: "~60%"
+    projects: "~15%"
+    education: "~15%"
+  top_third_strategy: >
+    Skills (Kafka, Spark, Flink, Airflow, dbt, etc.) →
+    First experience opening with throughput/scale number.
+  bullet_ordering: "Lead with throughput/scale, then reliability/SLA, then tooling"
+  coursework_strategy: "Databases, distributed systems, algorithms. Max 4 courses."
+  skills_label_guidance: >
+    Line 1: Streaming & Batch (Kafka, Flink, Spark, Airflow, dbt)
+    Line 2: Storage & Query (PostgreSQL, ClickHouse, BigQuery, Delta Lake, Iceberg)
+    Line 3: Infra & Languages (Python, SQL, Docker, Kubernetes, AWS, Terraform)
+
+finance:
+  story_arc: >
+    "I solve financial problems with quantitative rigor."
+    Lead with business impact ($ amounts, risk reduced, alpha generated).
+    Tech is the means, not the message.
+  section_order: [education, experience, skills, projects]
+  space_allocation:
+    education: "~20% — finance values pedigree and quant coursework"
+    experience: "~55%"
+    skills: "~10%"
+    projects: "~15%"
+  top_third_strategy: >
+    Education (strong school signals rigor) → first experience with $ impact.
+    Finance recruiters scan for: domain keywords (P&L, Greeks, factor models,
+    VaR, alpha, AUM), $ amounts, and quantitative methods.
+  bullet_ordering: "Lead with business/financial impact, then method, then tools"
+  coursework_strategy: "Finance, econometrics, probability, optimization, stochastic calculus."
+  skills_label_guidance: >
+    Line 1: Quantitative Methods (Econometrics, Time Series, Monte Carlo, Optimization)
+    Line 2: Programming & Tools (Python, R, SQL, Bloomberg, MATLAB, Excel/VBA)
+    Line 3: Finance Domain (Fixed Income, Derivatives, Risk Management, Factor Models)
+
+biostats:
+  story_arc: >
+    "I design rigorous studies and translate data into clinical evidence."
+    Lead with study design and clinical impact.
+    Show: regulatory awareness, methodological rigor, downstream clinical decisions.
+  section_order: [education, skills, experience, projects]
+  space_allocation:
+    education: "~25% — biostatistics is credential-heavy; degree + coursework matter"
+    skills: "~10% — stat methods first, software second"
+    experience: "~50%"
+    projects: "~15%"
+  top_third_strategy: >
+    Education → Skills (survival analysis, mixed models, SAS, R) →
+    First experience with trial phase and clinical outcome.
+  bullet_ordering: "Lead with study design/method, then statistical result, then clinical impact"
+  coursework_strategy: >
+    Clinical trials, survival analysis, longitudinal data, Bayesian methods,
+    categorical data, epidemiology. All relevant, max 6 per school.
+  skills_label_guidance: >
+    Line 1: Statistical Methods (Survival Analysis, Mixed Models, GEE, Bayesian Methods, Adaptive Designs)
+    Line 2: Software (SAS, R, Python, STATA, NONMEM)
+    Line 3: Domain (Clinical Trials, CDISC/ADAM, FDA Submissions, Epidemiology)
+
+analyst:
+  story_arc: >
+    "I find business insights in data and drive decisions."
+    Lead with $ impact or decisions enabled.
+  section_order: [education, skills, experience, projects]
+  space_allocation:
+    education: "~20%"
+    skills: "~10%"
+    experience: "~55%"
+    projects: "~15%"
+  top_third_strategy: >
+    Education → first experience with business impact ($, efficiency, stakeholders served).
+  bullet_ordering: "Lead with business impact, then method/tool, then adoption/scale"
+  coursework_strategy: "Statistics, economics, data analysis, business. Max 5."
+  skills_label_guidance: >
+    Line 1: Analytics (SQL, Python, R, Excel, Tableau, Power BI)
+    Line 2: Methods (A/B Testing, Regression, Forecasting, Statistical Analysis)
+    Line 3: Domain & Tools (Git, Looker, dbt, Snowflake, Salesforce)
+
+research:
+  story_arc: >
+    "I generate novel empirical findings with methodological rigor."
+    Lead with highest-impact publication or study outcome.
+  section_order: [education, experience, skills, projects]
+  space_allocation:
+    education: "~25%"
+    experience: "~50%"
+    skills: "~10%"
+    projects: "~15%"
+  top_third_strategy: >
+    Education → first experience with publication/contribution signal.
+  bullet_ordering: "Lead with finding/contribution, then method, then impact/venue"
+  coursework_strategy: "Research methods, statistics, domain-specific theory. Max 6."
+  skills_label_guidance: >
+    Line 1: Methods (Causal Inference, Experimental Design, Survey Methods, Meta-Analysis)
+    Line 2: Software (R, Python, Stata, SPSS, MATLAB, LaTeX)
+    Line 3: Domain (Economics, Psychology, Public Health — match to JD)
