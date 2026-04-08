@@ -196,6 +196,26 @@ def run_pipeline(
     else:
         _emit("Stage 5/9: Critic pass skipped")
 
+    # --- Stage 6: Persist bank suggestions ---
+    bank_suggestions = result.critic_result.bank_suggestions if result.critic_result else []
+    if bank_suggestions:
+        try:
+            from jobplanner.bank.suggestions import (
+                init_tables, merge_suggestions, check_bank_staleness,
+                mark_stale, update_bank_hash,
+            )
+            init_tables(tracker_db)
+            if check_bank_staleness(tracker_db, settings.bank_path):
+                stale_count = mark_stale(tracker_db)
+                update_bank_hash(tracker_db, settings.bank_path)
+                if stale_count:
+                    _emit(f"  -> Bank changed — marked {stale_count} suggestion(s) as stale")
+            jd_label = f"{result.jd.company} - {result.jd.title}"
+            new_count = merge_suggestions(tracker_db, bank_suggestions, jd_label)
+            _emit(f"  -> {new_count} new bank suggestion(s) persisted")
+        except Exception as exc:
+            _emit(f"  -> Suggestion persistence skipped: {exc}")
+
     # --- Stage 7+8: Render LaTeX + Compile PDF (with retry loop) ---
     out_dir = _make_output_dir(settings, result.jd)
     result.output_dir = out_dir

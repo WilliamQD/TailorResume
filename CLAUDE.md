@@ -5,7 +5,7 @@ Automated resume tailoring CLI. Paste a job description → get a tailored, ATS-
 ## Project Structure
 - `src/jobplanner/` — main package
   - `llm/` — LLM abstraction (Claude + OpenAI providers)
-  - `bank/` — experience bank schema, loader, AI-assisted updater
+  - `bank/` — experience bank schema, loader, AI-assisted updater, persistent suggestions
   - `parser/` — job description parser
   - `tailor/` — resume tailoring agent + hallucination validator
   - `latex/` — Jinja2 renderer + tectonic PDF compiler
@@ -15,7 +15,7 @@ Automated resume tailoring CLI. Paste a job description → get a tailored, ATS-
   - `app.py` — Streamlit web UI
 - `data/experience.yaml` — THE source of truth for all resume content (gitignored; copy from `experience.example.yaml`)
 - `data/templates/` — Jinja2 LaTeX templates
-- `output/` — generated resumes (gitignored)
+- `output/` — generated resumes, organized as `output/YYYY-MM-DD/{company}_{title}/` (gitignored)
 
 ## Commands
 ```bash
@@ -72,11 +72,27 @@ Set-Secret -Name 'JP-openai-apikey' -Secret '<your-key>'
 - `report.json` includes `inferred_skills_used` list showing which inferred skills appeared
 
 ## Web UI (`app.py`)
+- Two-tab layout: "Resume Tailor" (JD input + pipeline + results) and "Bank Health" (persistent suggestions)
 - Streamlit dark theme — all custom CSS lives in the `<style>` block at the top of `app.py`
 - After every UI change, visually verify the running app in a browser before considering the change done
-- Streamlit uses BaseWeb components — dropdown/popover selectors require `[data-baseweb="..."]` overrides
+- Streamlit uses BaseWeb components — dropdown/popover/tab selectors require `[data-baseweb="..."]` overrides
 - All colors must reference `--bg-*`/`--text-*`/`--accent-*` CSS variables for consistency
 - No Streamlit `icon=` parameters — Streamlit rejects Unicode symbols (e.g. `\u2713`), only accepts emoji
+
+## Bank Suggestions
+- Bank improvement suggestions are persisted in SQLite (`data/market/skill_tracker.db`) alongside market data
+- Suggestions accumulate across JD runs: upsert on (source_id, bullet_index, issue), tracking seen_count and source JDs
+- Status lifecycle: `active` → `stale` (when experience.yaml changes) → `active` (if re-seen) or `dismissed`
+- Bank Health tab shows all accumulated suggestions, sortable by frequency/priority/recency
+
+## Coursework Selection
+- Max 4 courses per school, 8 total across all schools
+- Concept-level dedup: strips common prefixes ("Intro to", "Advanced", etc.) and checks substring overlap across schools
+- Safety-net dedup in renderer catches anything the LLM misses
+
+## Page Fill
+- Target: 90% fill ratio (progressive escalation over 3 retries)
+- Retry 1: bump project bullets to 3; Retry 2: bump experience bullets to 4; Retry 3: allow a 3rd project
 
 ## Conventions
 - Pydantic v2 for all data models

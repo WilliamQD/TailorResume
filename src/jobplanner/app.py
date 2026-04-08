@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 
@@ -33,6 +34,7 @@ st.markdown("""
 
 /* ---- Root palette ---- */
 :root {
+    color-scheme: dark;  /* tells the browser to render native elements (details/summary/input) dark */
     --bg-primary: #0b0c0e;
     --bg-card: #131519;
     --bg-elevated: #1a1d23;
@@ -52,21 +54,16 @@ st.markdown("""
 }
 
 /* ---- Global ---- */
+/* SCROLL-SAFETY: Noise texture is applied as a background-image directly on .stApp.
+   Do NOT use a ::before pseudo-element with position:fixed — it creates a stacking
+   context that breaks Streamlit's scroll container after results load, locking the
+   page.  Do NOT add position:relative here either — it breaks Streamlit's layout.
+   The SVG has opacity='0.025' baked in so no CSS opacity is needed. */
 .stApp {
     background-color: var(--bg-primary) !important;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E") !important;
+    background-size: 256px 256px !important;
     font-family: 'Source Serif 4', Georgia, serif !important;
-}
-
-/* Noise texture overlay */
-.stApp::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0.025;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 256px 256px;
 }
 
 /* ---- Scrollbar ---- */
@@ -98,7 +95,16 @@ section[data-testid="stSidebar"] .stMarkdown li {
 section[data-testid="stSidebar"] .stMarkdown .stCaption p {
     color: var(--text-secondary) !important;
 }
-section[data-testid="stSidebar"] label {
+/*
+ * IMPORTANT: Target only form control labels, NOT expander/button/summary elements.
+ * Applying font-family to expander headers breaks Streamlit's icon font (renders as "arr").
+ * Always use data-testid-scoped selectors here, never bare `label`.
+ */
+section[data-testid="stSidebar"] .stSelectbox label,
+section[data-testid="stSidebar"] .stRadio > label,
+section[data-testid="stSidebar"] .stCheckbox > label,
+section[data-testid="stSidebar"] .stTextInput label,
+section[data-testid="stSidebar"] .stNumberInput label {
     color: var(--text-primary) !important;
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 0.82rem !important;
@@ -165,16 +171,24 @@ section[data-testid="stSidebar"] hr {
 }
 
 /* ---- Text area ---- */
-.stTextArea textarea {
+.stTextArea textarea,
+.stTextArea textarea:disabled,
+.stTextArea textarea[readonly] {
     font-family: 'Source Serif 4', serif !important;
     font-size: 0.95rem !important;
     line-height: 1.55 !important;
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border) !important;
     color: var(--text-primary) !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    opacity: 1 !important;
     border-radius: 4px !important;
     padding: 14px 16px !important;
     transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+/* BaseWeb textarea wrapper — some Streamlit versions darken this on re-render */
+.stTextArea [data-baseweb="textarea"] {
+    background-color: var(--bg-card) !important;
 }
 .stTextArea textarea::placeholder {
     color: var(--text-secondary) !important;
@@ -415,28 +429,105 @@ div[data-baseweb="menu"] {
 .inf-badge.low { background: rgba(232, 88, 88, 0.08); color: var(--danger); }
 
 /* ---- PDF preview frame ---- */
+/* Shows the full PDF page — no max-height or overflow clipping. */
 .pdf-frame {
     border: 1px solid var(--border);
     border-radius: 4px;
-    overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* ---- Status widget (pipeline progress) ---- */
-[data-testid="stStatusWidget"] {
+[data-testid="stStatusWidget"],
+[data-testid="stStatusWidget"] > *,
+[data-testid="stStatusWidget"] details,
+[data-testid="stStatusWidget"] details > div,
+[data-testid="stStatusWidget"] summary {
     background-color: var(--bg-card) !important;
+    color-scheme: dark !important;
+}
+[data-testid="stStatusWidget"] {
     border: 1px solid var(--border) !important;
     border-radius: 4px !important;
 }
+/* Code block used for progress log */
+[data-testid="stCode"],
+[data-testid="stCode"] pre,
+[data-testid="stCode"] code {
+    background-color: var(--bg-elevated) !important;
+    color: var(--text-secondary) !important;
+}
 
 /* ---- Expander ---- */
+/*
+ * IMPORTANT: NEVER set font-family on `summary` or any element wrapping
+ * Streamlit icon characters. Streamlit uses a private-use-area icon font
+ * for expand/collapse arrows. Overriding font-family renders the icon as
+ * garbled text (e.g. "arr"). Only set color/background, never font-family,
+ * on summary or button elements containing icons.
+ */
 [data-testid="stExpander"] {
     border-color: var(--border) !important;
+    background-color: var(--bg-card) !important;
+}
+[data-testid="stExpander"] details {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border) !important;
+}
+[data-testid="stExpander"] details > div,
+[data-testid="stExpanderContent"] {
+    background-color: var(--bg-card) !important;
+}
+/* Color only on summary — no font-family (would break arrow icon) */
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary p,
+[data-testid="stExpander"] summary > div {
+    color: var(--text-primary) !important;
+    background-color: var(--bg-card) !important;
+    color-scheme: dark !important;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] li {
+    color: var(--text-primary) !important;
+}
+
+/* ---- Force dark on all Streamlit containers ---- */
+[data-testid="stVerticalBlock"],
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="element-container"],
+[data-testid="stMarkdownContainer"] {
     background-color: transparent !important;
 }
-[data-testid="stExpander"] summary p,
-[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+/* Sidebar content */
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+    background: transparent !important;
+}
+section[data-testid="stSidebar"] [data-testid="stExpander"] details,
+section[data-testid="stSidebar"] [data-testid="stExpander"] details > div,
+section[data-testid="stSidebar"] [data-testid="stExpanderContent"] {
+    background-color: var(--bg-card) !important;
+}
+/* Caption text */
+[data-testid="stCaptionContainer"] p,
+.stCaption p {
+    color: var(--text-secondary) !important;
+    font-family: 'Source Serif 4', serif !important;
+    font-size: 0.82rem !important;
+}
+/* Markdown bold */
+[data-testid="stMarkdownContainer"] strong {
     color: var(--text-primary) !important;
+}
+
+/* ---- Scroll safety net (defense-in-depth) ---- */
+/* The primary scroll fix is using position:absolute (not fixed) on .stApp::before
+   and capping the PDF frame height.  This overflow-y rule is kept as a safety net
+   in case Streamlit's own CSS ever sets overflow:hidden on the main container.
+   Do NOT remove this — and do NOT remove the position:absolute fix above. */
+section[data-testid="stMain"] {
+    overflow-y: auto !important;
+}
+.main .block-container {
+    padding-bottom: 5rem !important;
 }
 
 /* ---- Alert boxes ---- */
@@ -491,6 +582,271 @@ div[data-baseweb="menu"] {
     color: var(--danger);
     margin-top: 12px;
 }
+
+/* ---- Pipeline mode radio (sidebar) ---- */
+div[data-testid="stRadio"] > label {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    color: var(--text-primary) !important;
+}
+div[data-testid="stRadio"] div[role="radiogroup"] {
+    gap: 6px !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+}
+div[data-testid="stRadio"] div[role="radiogroup"] label {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: #d8d4cd !important;
+    background: #1f232a !important;
+    border: 1px solid #3a3f4a !important;
+    border-radius: 3px !important;
+    padding: 5px 12px !important;
+    min-width: 0 !important;
+    transition: all 0.15s ease;
+}
+div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
+    background: rgba(201, 149, 58, 0.18) !important;
+    border-color: #c9953a !important;
+    color: #e0ad4e !important;
+}
+/* Target the text node directly — Streamlit may override color on p */
+div[data-testid="stRadio"] div[role="radiogroup"] label p,
+div[data-testid="stRadio"] div[role="radiogroup"] label span,
+div[data-testid="stRadio"] div[role="radiogroup"] label div {
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    letter-spacing: inherit !important;
+    text-transform: inherit !important;
+    margin: 0 !important;
+    white-space: nowrap;
+}
+/* Hide the radio circle — whole label is the affordance */
+div[data-testid="stRadio"] div[role="radiogroup"] label input[type="radio"] {
+    display: none !important;
+}
+
+/* ---- Critic summary quote block ---- */
+.critic-summary {
+    padding: 10px 14px 10px 16px;
+    background: rgba(201, 149, 58, 0.04);
+    border: 1px solid rgba(201, 149, 58, 0.14);
+    border-left: 3px solid var(--accent-dim);
+    border-radius: 0 3px 3px 0;
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.87rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-bottom: 10px;
+}
+
+/* ---- QI stats row ---- */
+.qi-stats {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.qi-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    padding: 3px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+.qi-stat strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.qi-boost-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    padding: 3px 8px;
+    background: var(--accent-glow);
+    border: 1px solid rgba(201, 149, 58, 0.2);
+    border-radius: 2px;
+}
+
+/* ---- Suggestion cards (critic output) ---- */
+.suggestion-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-accent);
+    border-radius: 0 4px 4px 0;
+    padding: 9px 12px 10px 12px;
+    margin-bottom: 7px;
+    transition: background 0.15s ease;
+}
+.suggestion-card:hover { background: var(--bg-elevated); }
+.suggestion-card.p-high  { border-left-color: var(--danger); }
+.suggestion-card.p-medium { border-left-color: var(--warning); }
+.suggestion-card.p-low   { border-left-color: var(--border-accent); }
+.sug-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+.sug-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.77rem;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    padding: 1px 7px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.sug-issue {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    padding: 2px 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.sug-issue.thin_description    { color: var(--warning);    background: rgba(232,180,58,0.08); }
+.sug-issue.missing_metrics     { color: var(--danger);     background: rgba(232,88,88,0.08); }
+.sug-issue.vague_impact        { color: var(--warning);    background: rgba(232,180,58,0.08); }
+.sug-issue.missing_tech_detail { color: var(--accent);     background: var(--accent-glow); }
+.sug-priority {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.sug-priority.high   { color: var(--danger); }
+.sug-priority.medium { color: var(--warning); }
+.sug-priority.low    { color: var(--text-muted); }
+.sug-text {
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* ---- Tabs (BaseWeb) ---- */
+[data-baseweb="tab-list"] {
+    background: transparent !important;
+    border-bottom: 1px solid var(--border) !important;
+    gap: 0 !important;
+}
+[data-baseweb="tab"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+    border-bottom: 2px solid transparent !important;
+    padding: 10px 20px !important;
+}
+[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--accent) !important;
+    border-bottom-color: var(--accent) !important;
+}
+[data-baseweb="tab-highlight"] {
+    background-color: var(--accent) !important;
+}
+[data-baseweb="tab-panel"] {
+    background: transparent !important;
+}
+
+/* ---- Bank Health tab ---- */
+.bh-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.bh-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 20px;
+    text-align: center;
+    flex: 1;
+}
+.bh-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.bh-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+}
+.bh-stat-value.active { color: var(--accent); }
+.bh-stat-value.stale  { color: var(--warning); }
+.bh-stat-value.dismissed { color: var(--text-muted); }
+
+.bh-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+.bh-card.stale-card {
+    opacity: 0.6;
+    border-style: dashed;
+}
+.bh-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.bh-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.bh-issue {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 2px 8px;
+    border-radius: 2px;
+}
+.bh-seen {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    color: var(--text-muted);
+}
+.bh-jds {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -512,7 +868,7 @@ def render_pdf_preview(pdf_path: Path) -> bytes:
     """Render the first page of a PDF to PNG bytes at 200 DPI."""
     doc = fitz.open(str(pdf_path))
     page = doc[0]
-    pix = page.get_pixmap(dpi=200)
+    pix = page.get_pixmap(dpi=150)
     png = pix.tobytes("png")
     doc.close()
     return png
@@ -549,11 +905,16 @@ with st.sidebar:
 
     st.markdown("---")
 
-    skip_critic_ui = st.checkbox(
-        "Skip critic pass",
-        value=False,
-        help="Faster but lower quality — skips the quality improvement pass",
+    pipeline_mode = st.radio(
+        "Pipeline Mode",
+        options=["Quality", "Speed"],
+        index=0,
+        horizontal=True,
+        help="Quality: runs critic/improve pass for stronger bullets. Speed: skips critic pass.",
     )
+    skip_critic_ui = pipeline_mode == "Speed"
+    st.caption("Quality runs a critic pass that rewrites weak bullets." if not skip_critic_ui
+               else "Speed skips the critic pass — faster, slightly lower quality.")
 
     st.markdown("---")
 
@@ -582,200 +943,374 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
-# Main area
+# Main area — tabs
 # ---------------------------------------------------------------------------
 
-st.markdown('<div class="section-header">Job Description</div>', unsafe_allow_html=True)
-
-jd_text = st.text_area(
-    "Paste the full job description",
-    height=220,
-    placeholder="Paste a job description here and click Generate...",
-    label_visibility="collapsed",
-)
-
-generate = st.button(
-    "GENERATE RESUME",
-    type="primary",
-    disabled=not jd_text.strip(),
-    use_container_width=True,
-)
+tab_tailor, tab_health = st.tabs(["Resume Tailor", "Bank Health"])
 
 # ---------------------------------------------------------------------------
-# Pipeline execution
+# Tab 1: Resume Tailor
 # ---------------------------------------------------------------------------
 
-if generate and jd_text.strip():
-    settings = load_settings(model=model_alias)
-    progress_lines: list[str] = []
+with tab_tailor:
+    st.markdown('<div class="section-header">Job Description</div>', unsafe_allow_html=True)
 
-    with st.status("Running pipeline...", expanded=True) as status:
-        log_area = st.empty()
+    jd_text = st.text_area(
+        "Paste the full job description",
+        height=220,
+        placeholder="Paste a job description here and click Generate...",
+        label_visibility="collapsed",
+    )
 
-        def on_progress(msg: str) -> None:
-            progress_lines.append(msg)
-            log_area.code("\n".join(progress_lines), language=None)
+    generate = st.button(
+        "GENERATE RESUME",
+        type="primary",
+        disabled=not jd_text.strip(),
+        use_container_width=True,
+    )
 
-        try:
-            result = run_pipeline(
-                jd_text,
-                settings,
-                skip_critic=skip_critic_ui,
-                on_progress=on_progress,
+    # Pipeline execution
+    if generate and jd_text.strip():
+        settings = load_settings(model=model_alias)
+        progress_lines: list[str] = []
+
+        with st.status("Running pipeline...", expanded=True) as status:
+            log_area = st.empty()
+
+            def on_progress(msg: str) -> None:
+                progress_lines.append(msg)
+                log_area.code("\n".join(progress_lines), language=None)
+
+            try:
+                result = run_pipeline(
+                    jd_text,
+                    settings,
+                    skip_critic=skip_critic_ui,
+                    on_progress=on_progress,
+                )
+                st.session_state["result"] = result
+                if result.pdf_path and result.pdf_path.exists():
+                    status.update(label="Pipeline complete", state="complete", expanded=False)
+                else:
+                    status.update(label="Pipeline finished with issues", state="error", expanded=True)
+            except Exception as exc:
+                st.error(f"Pipeline error: {exc}")
+                status.update(label="Pipeline failed", state="error", expanded=True)
+
+
+    # -----------------------------------------------------------------------
+    # Results display
+    # -----------------------------------------------------------------------
+
+    result: PipelineResult | None = st.session_state.get("result")
+
+    if not result:
+        st.markdown("""
+        <div class="empty-state">
+            <div class="hint-icon">\u25A0</div>
+            <div class="hint-text">Paste a job description above to generate a tailored resume</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    if result and result.pdf_path and result.pdf_path.exists():
+
+        st.markdown('<div class="section-header">Results</div>', unsafe_allow_html=True)
+
+        col_pdf, col_report = st.columns([3, 2], gap="large")
+
+        # ---- Left column: PDF preview ----
+        # SCROLL-SAFETY: The image MUST be embedded as base64 inside a single st.markdown
+        # call so that the .pdf-frame div actually wraps the <img>.  Splitting across
+        # separate st.markdown / st.image calls silently breaks — Streamlit renders each
+        # call in its own DOM node, so the browser auto-closes the div before the image,
+        # and the max-height / overflow CSS has no effect.  Never split this back out.
+        with col_pdf:
+            png_bytes = render_pdf_preview(result.pdf_path)
+            b64 = base64.b64encode(png_bytes).decode()
+            st.markdown(
+                f'<div class="pdf-frame">'
+                f'<img src="data:image/png;base64,{b64}" style="width:100%"/>'
+                f'</div>',
+                unsafe_allow_html=True,
             )
-            st.session_state["result"] = result
-            if result.pdf_path and result.pdf_path.exists():
-                status.update(label="Pipeline complete", state="complete", expanded=False)
-            else:
-                status.update(label="Pipeline finished with issues", state="error", expanded=True)
-        except Exception as exc:
-            st.error(f"Pipeline error: {exc}")
-            status.update(label="Pipeline failed", state="error", expanded=True)
 
-
-# ---------------------------------------------------------------------------
-# Results display
-# ---------------------------------------------------------------------------
-
-result: PipelineResult | None = st.session_state.get("result")
-
-if not result:
-    st.markdown("""
-    <div class="empty-state">
-        <div class="hint-icon">\u25A0</div>
-        <div class="hint-text">Paste a job description above to generate a tailored resume</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-if result and result.pdf_path and result.pdf_path.exists():
-
-    st.markdown('<div class="section-header">Results</div>', unsafe_allow_html=True)
-
-    col_pdf, col_report = st.columns([3, 2], gap="large")
-
-    # ---- Left column: PDF preview ----
-    with col_pdf:
-        png_bytes = render_pdf_preview(result.pdf_path)
-        st.markdown('<div class="pdf-frame">', unsafe_allow_html=True)
-        st.image(png_bytes, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # Download row
-        dl1, dl2 = st.columns(2)
-        with dl1:
-            st.download_button(
-                "DOWNLOAD PDF",
-                data=result.pdf_path.read_bytes(),
-                file_name="tailored_resume.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-            )
-        with dl2:
-            if result.tex_path and result.tex_path.exists():
+            # Download row
+            dl1, dl2 = st.columns(2)
+            with dl1:
                 st.download_button(
-                    "DOWNLOAD .TEX",
-                    data=result.tex_path.read_text(encoding="utf-8"),
-                    file_name="tailored_resume.tex",
-                    mime="text/plain",
+                    "DOWNLOAD PDF",
+                    data=result.pdf_path.read_bytes(),
+                    file_name=result.pdf_path.name,
+                    mime="application/pdf",
                     use_container_width=True,
                 )
+            with dl2:
+                if result.tex_path and result.tex_path.exists():
+                    st.download_button(
+                        "DOWNLOAD .TEX",
+                        data=result.tex_path.read_text(encoding="utf-8"),
+                        file_name=result.tex_path.name,
+                        mime="text/plain",
+                        use_container_width=True,
+                    )
 
-    # ---- Right column: report ----
-    with col_report:
-        report = load_report(result.output_dir) if result.output_dir else None
-        ats = result.ats_report
+        # ---- Right column: report ----
+        with col_report:
+            report = load_report(result.output_dir) if result.output_dir else None
+            ats = result.ats_report
 
-        # ATS Score metric
-        if ats:
-            score = ats.score
-            if score >= 75:
-                color = "var(--success)"
-                score_class = "score-good"
-            elif score >= 60:
-                color = "var(--warning)"
-                score_class = "score-ok"
-            else:
-                color = "var(--danger)"
-                score_class = "score-low"
+            # ATS Score metric
+            if ats:
+                score = ats.score
+                if score >= 75:
+                    color = "var(--success)"
+                    score_class = "score-good"
+                elif score >= 60:
+                    color = "var(--warning)"
+                    score_class = "score-ok"
+                else:
+                    color = "var(--danger)"
+                    score_class = "score-low"
 
-            st.markdown(f"""
-            <div class="metric-card {score_class}">
-                <div class="metric-value" style="color:{color}">{score}</div>
-                <div class="metric-label">ATS Score / 100</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # JD summary
-        if result.jd:
-            st.markdown(f"""
-            <div class="jd-card">
-                <span class="jd-title">{result.jd.title}</span>
-                <span class="jd-company">&nbsp;at {result.jd.company}</span>
-                <div class="jd-meta">
-                    {result.jd.role_type} &middot; {result.jd.seniority}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # Keyword hits
-        if ats and ats.keyword_hits:
-            st.markdown('<div class="section-header">Keyword Hits</div>', unsafe_allow_html=True)
-            pills = "".join(f'<span class="kw-hit">{kw}</span>' for kw in ats.keyword_hits)
-            st.markdown(f'<div class="kw-wrap">{pills}</div>', unsafe_allow_html=True)
-
-        # Keyword misses
-        if ats and ats.keyword_misses:
-            st.markdown('<div class="section-header">Keyword Misses</div>', unsafe_allow_html=True)
-            pills = "".join(f'<span class="kw-miss">{kw}</span>' for kw in ats.keyword_misses)
-            st.markdown(f'<div class="kw-wrap">{pills}</div>', unsafe_allow_html=True)
-
-        # Inferred skills used
-        if report and report.get("inferred_skills_used"):
-            st.markdown('<div class="section-header">Inferred Skills Used</div>',
-                        unsafe_allow_html=True)
-            for sk in report["inferred_skills_used"]:
-                conf = sk.get("confidence", "moderate")
                 st.markdown(f"""
-                <div class="inf-card">
-                    <span class="inf-name">{sk["name"]}</span>
-                    <span class="inf-badge {conf}">{conf}</span>
-                    <div class="inf-basis">{sk.get("basis", "")}</div>
+                <div class="metric-card {score_class}">
+                    <div class="metric-value" style="color:{color}">{score}</div>
+                    <div class="metric-label">ATS Score / 100</div>
                 </div>
                 """, unsafe_allow_html=True)
 
-        # Validation status
-        if result.validation:
-            if result.validation.passed:
-                st.markdown(
-                    '<div class="validation-pass">'
-                    '\u2713 &nbsp;Validation passed \u2014 no hallucinations detected'
-                    '</div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                errors_html = "".join(
-                    f"<div style='font-size:0.68rem; color:var(--text-secondary); "
-                    f"margin-top:4px;'>{w.source_id}[{w.bullet_index}]: {w.message}</div>"
-                    for w in result.validation.errors
-                )
-                st.markdown(
-                    f'<div class="validation-fail">'
-                    f'\u2717 &nbsp;Validation failed{errors_html}'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
+            # JD summary
+            if result.jd:
+                st.markdown(f"""
+                <div class="jd-card">
+                    <span class="jd-title">{result.jd.title}</span>
+                    <span class="jd-company">&nbsp;at {result.jd.company}</span>
+                    <div class="jd-meta">
+                        {result.jd.role_type} &middot; {result.jd.seniority}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-        # Bank improvement suggestions from critic pass
-        if result.critic_result and result.critic_result.bank_suggestions:
-            suggs = result.critic_result.bank_suggestions
-            high = [s for s in suggs if s.priority == "high"]
-            with st.expander(f"Improve Your Experience Bank ({len(suggs)} suggestions)", expanded=bool(high)):
-                for s in sorted(suggs, key=lambda x: {"high": 0, "medium": 1, "low": 2}[x.priority]):
-                    color = {"high": "var(--danger)", "medium": "var(--warning)", "low": "var(--text-muted)"}[s.priority]
+            # Keyword hits
+            if ats and ats.keyword_hits:
+                st.markdown('<div class="section-header">Keyword Hits</div>', unsafe_allow_html=True)
+                pills = "".join(f'<span class="kw-hit">{kw}</span>' for kw in ats.keyword_hits)
+                st.markdown(f'<div class="kw-wrap">{pills}</div>', unsafe_allow_html=True)
+
+            # Keyword misses
+            if ats and ats.keyword_misses:
+                st.markdown('<div class="section-header">Keyword Misses</div>', unsafe_allow_html=True)
+                pills = "".join(f'<span class="kw-miss">{kw}</span>' for kw in ats.keyword_misses)
+                st.markdown(f'<div class="kw-wrap">{pills}</div>', unsafe_allow_html=True)
+
+            # Inferred skills used
+            if report and report.get("inferred_skills_used"):
+                st.markdown('<div class="section-header">Inferred Skills Used</div>',
+                            unsafe_allow_html=True)
+                for sk in report["inferred_skills_used"]:
+                    conf = sk.get("confidence", "moderate")
+                    st.markdown(f"""
+                    <div class="inf-card">
+                        <span class="inf-name">{sk["name"]}</span>
+                        <span class="inf-badge {conf}">{conf}</span>
+                        <div class="inf-basis">{sk.get("basis", "")}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # Validation status
+            if result.validation:
+                if result.validation.passed:
                     st.markdown(
-                        f'<div class="inf-card">'
-                        f'<span class="inf-name" style="color:{color}">[{s.priority.upper()}] {s.source_id}[{s.bullet_index}]</span>'
-                        f'<div class="inf-basis"><b>{s.issue}:</b> {s.suggestion}</div>'
+                        '<div class="validation-pass">'
+                        '\u2713 &nbsp;Validation passed \u2014 no hallucinations detected'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    errors_html = "".join(
+                        f"<div style='font-size:0.68rem; color:var(--text-secondary); "
+                        f"margin-top:4px;'>{w.source_id}[{w.bullet_index}]: {w.message}</div>"
+                        for w in result.validation.errors
+                    )
+                    st.markdown(
+                        f'<div class="validation-fail">'
+                        f'\u2717 &nbsp;Validation failed{errors_html}'
                         f'</div>',
                         unsafe_allow_html=True,
                     )
+
+            # ---- Quality Intelligence ----
+            has_qi = (
+                result.critic_result
+                or (report and (report.get("enrichment_tokens") or report.get("market_boosted_skills")))
+            )
+            if has_qi:
+                st.markdown('<div class="section-header">Quality Intelligence</div>',
+                            unsafe_allow_html=True)
+
+                # Critic summary quote
+                if result.critic_result and result.critic_result.summary:
+                    st.markdown(
+                        f'<div class="critic-summary">{result.critic_result.summary}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                # Enrichment + market stats row
+                if report:
+                    tokens = report.get("enrichment_tokens", 0)
+                    boosted = report.get("market_boosted_skills") or []
+                    stat_parts = []
+                    if tokens:
+                        stat_parts.append(
+                            f'<span class="qi-stat"><strong>~{tokens:,}</strong> enrichment tokens</span>'
+                        )
+                    if boosted:
+                        boost_pills = "".join(
+                            f'<span class="qi-boost-pill">{s}</span>' for s in boosted[:6]
+                        )
+                        stat_parts.append(
+                            f'<span class="qi-stat"><strong>{len(boosted)}</strong> market-boosted</span>'
+                            + boost_pills
+                        )
+                    if stat_parts:
+                        st.markdown(
+                            f'<div class="qi-stats">{"".join(stat_parts)}</div>',
+                            unsafe_allow_html=True,
+                        )
+
+                # Bank improvement suggestions (JD-specific)
+                if result.critic_result and result.critic_result.bank_suggestions:
+                    suggs = result.critic_result.bank_suggestions
+                    n_high = sum(1 for s in suggs if s.priority == "high")
+                    label = (
+                        f"Experience Bank — {n_high} high-priority fix{'es' if n_high != 1 else ''}"
+                        if n_high else
+                        f"Experience Bank — {len(suggs)} suggestion{'s' if len(suggs) != 1 else ''}"
+                    )
+                    with st.expander(label, expanded=bool(n_high)):
+                        for s in sorted(suggs, key=lambda x: {"high": 0, "medium": 1, "low": 2}[x.priority]):
+                            issue_class = s.issue.replace(" ", "_")
+                            st.markdown(
+                                f'<div class="suggestion-card p-{s.priority}">'
+                                f'  <div class="sug-header">'
+                                f'    <span class="sug-source">{s.source_id} &middot; bullet {s.bullet_index}</span>'
+                                f'    <span class="sug-issue {issue_class}">{s.issue.replace("_", " ")}</span>'
+                                f'    <span class="sug-priority {s.priority}">{s.priority}</span>'
+                                f'  </div>'
+                                f'  <div class="sug-text">{s.suggestion}</div>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+
+# ---------------------------------------------------------------------------
+# Tab 2: Bank Health
+# ---------------------------------------------------------------------------
+
+with tab_health:
+    from jobplanner.bank.suggestions import (
+        get_all_suggestions, get_suggestion_counts, dismiss_suggestion, dismiss_all_stale,
+    )
+
+    _settings_tmp = load_settings()
+    _tracker_db = _settings_tmp.output_dir.parent / "data" / "market" / "skill_tracker.db"
+
+    if not _tracker_db.exists():
+        st.markdown("""
+        <div class="empty-state">
+            <div class="hint-icon">\u25A0</div>
+            <div class="hint-text">No suggestions yet. Generate a resume with the critic pass enabled to start accumulating bank improvement suggestions.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        counts = get_suggestion_counts(_tracker_db)
+        total = counts["active"] + counts["stale"] + counts["dismissed"]
+
+        # Summary stats
+        st.markdown(f"""
+        <div class="bh-stats">
+            <div class="bh-stat">
+                <div class="bh-stat-value active">{counts["active"]}</div>
+                <div class="bh-stat-label">Active</div>
+            </div>
+            <div class="bh-stat">
+                <div class="bh-stat-value stale">{counts["stale"]}</div>
+                <div class="bh-stat-label">Stale</div>
+            </div>
+            <div class="bh-stat">
+                <div class="bh-stat-value dismissed">{counts["dismissed"]}</div>
+                <div class="bh-stat-label">Dismissed</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Bulk action
+        if counts["stale"] > 0:
+            if st.button("Dismiss All Stale", key="bh_dismiss_stale"):
+                dismissed = dismiss_all_stale(_tracker_db)
+                st.rerun()
+
+        # Show active + stale suggestions
+        suggestions = get_all_suggestions(_tracker_db, status="active")
+        stale_suggestions = get_all_suggestions(_tracker_db, status="stale")
+
+        if not suggestions and not stale_suggestions:
+            st.markdown("""
+            <div class="empty-state">
+                <div class="hint-text">No active suggestions. Your experience bank looks good!</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        for s in suggestions:
+            jds = json.loads(s["source_jds"]) if isinstance(s["source_jds"], str) else s["source_jds"]
+            jds_text = ", ".join(jds[-3:])  # show last 3 JDs
+            if len(jds) > 3:
+                jds_text = f"{jds_text} (+{len(jds) - 3} more)"
+
+            col_card, col_btn = st.columns([9, 1])
+            with col_card:
+                st.markdown(
+                    f'<div class="bh-card">'
+                    f'  <div class="bh-card-header">'
+                    f'    <span class="bh-source">{s["source_id"]} &middot; bullet {s["bullet_index"]}</span>'
+                    f'    <span class="bh-issue">{s["issue"].replace("_", " ")}</span>'
+                    f'    <span class="sug-priority {s["priority"]}">{s["priority"]}</span>'
+                    f'    <span class="bh-seen">seen {s["seen_count"]}x</span>'
+                    f'  </div>'
+                    f'  <div class="sug-text">{s["suggestion"]}</div>'
+                    f'  <div class="bh-jds">JDs: {jds_text}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            with col_btn:
+                if st.button("X", key=f"bh_dismiss_{s['id']}",
+                             help="Dismiss this suggestion"):
+                    dismiss_suggestion(_tracker_db, s["id"])
+                    st.rerun()
+
+        # Stale suggestions (dimmed)
+        if stale_suggestions:
+            st.markdown('<div class="section-header">Stale (bank changed)</div>',
+                        unsafe_allow_html=True)
+            for s in stale_suggestions:
+                jds = json.loads(s["source_jds"]) if isinstance(s["source_jds"], str) else s["source_jds"]
+                jds_text = ", ".join(jds[-3:])
+
+                col_card, col_btn = st.columns([9, 1])
+                with col_card:
+                    st.markdown(
+                        f'<div class="bh-card stale-card">'
+                        f'  <div class="bh-card-header">'
+                        f'    <span class="bh-source">{s["source_id"]} &middot; bullet {s["bullet_index"]}</span>'
+                        f'    <span class="bh-issue">{s["issue"].replace("_", " ")}</span>'
+                        f'    <span class="bh-seen">seen {s["seen_count"]}x</span>'
+                        f'  </div>'
+                        f'  <div class="sug-text">{s["suggestion"]}</div>'
+                        f'  <div class="bh-jds">JDs: {jds_text}</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                with col_btn:
+                    if st.button("X", key=f"bh_dismiss_stale_{s['id']}",
+                                 help="Dismiss this suggestion"):
+                        dismiss_suggestion(_tracker_db, s["id"])
+                        st.rerun()
