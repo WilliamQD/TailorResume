@@ -304,6 +304,54 @@ div[data-baseweb="menu"] {
     box-shadow: 0 2px 12px rgba(201, 149, 58, 0.1) !important;
 }
 
+/* ---- Secondary buttons (Edit, Dismiss, Dismiss All Stale) ----
+ * Use descendant (space) combinator rather than direct-child (>) — when
+ * use_container_width=True is passed, Streamlit wraps the <button> in an
+ * extra container, which would break `.stButton > button` matching.
+ */
+button[kind="secondary"],
+button[data-testid="stBaseButton-secondary"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 3px !important;
+    padding: 0.45rem 0.8rem !important;
+    min-height: 0 !important;
+    transition: all 0.18s ease !important;
+}
+button[kind="secondary"]:hover,
+button[data-testid="stBaseButton-secondary"]:hover {
+    background: var(--bg-elevated) !important;
+    border-color: var(--accent-dim) !important;
+    color: var(--accent-bright) !important;
+    box-shadow: 0 2px 12px rgba(201, 149, 58, 0.08) !important;
+}
+button[kind="secondary"]:active,
+button[data-testid="stBaseButton-secondary"]:active {
+    transform: translateY(0.5px) !important;
+    background: var(--bg-hover) !important;
+}
+button[kind="secondary"]:focus,
+button[data-testid="stBaseButton-secondary"]:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 1px var(--accent-dim) !important;
+}
+/* Per-row Edit / × buttons — kill the label's inner <p> margin so the
+ * glyph/text centers properly in the compact button box. */
+button[kind="secondary"] p,
+button[data-testid="stBaseButton-secondary"] p {
+    margin: 0 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.1em !important;
+    line-height: 1 !important;
+}
+
 /* ---- Metric card ---- */
 .metric-card {
     background: var(--bg-card);
@@ -1260,7 +1308,7 @@ with tab_health:
 
         # Bulk action
         if counts["stale"] > 0:
-            if st.button("Dismiss All Stale", key="bh_dismiss_stale"):
+            if st.button("Dismiss All Stale", key="bh_dismiss_stale", type="secondary"):
                 dismissed = dismiss_all_stale(_tracker_db)
                 st.rerun()
 
@@ -1298,7 +1346,8 @@ with tab_health:
                 )
             with col_edit:
                 if st.button("Edit", key=f"bh_edit_{s['id']}",
-                             help="Open experience.yaml at this bullet in VS Code"):
+                             help="Open experience.yaml at this bullet in VS Code",
+                             type="secondary", use_container_width=True):
                     line = find_bullet_line(
                         _settings_tmp.bank_path, s["source_id"], s["bullet_index"],
                     )
@@ -1315,8 +1364,9 @@ with tab_health:
                             f"Open `{_settings_tmp.bank_path}` at line {line} manually."
                         )
             with col_btn:
-                if st.button("X", key=f"bh_dismiss_{s['id']}",
-                             help="Dismiss this suggestion"):
+                if st.button("\u00D7", key=f"bh_dismiss_{s['id']}",
+                             help="Dismiss this suggestion",
+                             type="secondary", use_container_width=True):
                     dismiss_suggestion(_tracker_db, s["id"])
                     st.rerun()
 
@@ -1344,7 +1394,8 @@ with tab_health:
                     )
                 with col_edit:
                     if st.button("Edit", key=f"bh_edit_stale_{s['id']}",
-                                 help="Open experience.yaml at this bullet in VS Code"):
+                                 help="Open experience.yaml at this bullet in VS Code",
+                                 type="secondary", use_container_width=True):
                         line = find_bullet_line(
                             _settings_tmp.bank_path, s["source_id"], s["bullet_index"],
                         )
@@ -1361,7 +1412,8 @@ with tab_health:
                                 f"Open `{_settings_tmp.bank_path}` at line {line} manually."
                             )
                 with col_btn:
-                    if st.button("X", key=f"bh_dismiss_stale_{s['id']}",
-                                 help="Dismiss this suggestion"):
+                    if st.button("\u00D7", key=f"bh_dismiss_stale_{s['id']}",
+                                 help="Dismiss this suggestion",
+                                 type="secondary", use_container_width=True):
                         dismiss_suggestion(_tracker_db, s["id"])
                         st.rerun()
