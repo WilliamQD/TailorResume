@@ -1212,7 +1212,7 @@ with tab_health:
     )
 
     _settings_tmp = load_settings()
-    _tracker_db = _settings_tmp.output_dir.parent / "data" / "market" / "skill_tracker.db"
+    _tracker_db = _settings_tmp.tracker_db_path
 
     if not _tracker_db.exists():
         st.markdown("""

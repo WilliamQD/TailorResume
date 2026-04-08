@@ -53,6 +53,40 @@ Set-Secret -Name 'JP-openai-apikey' -Secret '<your-key>'
 
 ## Other Environment Variables
 - `JOBPLANNER_MODEL` — default model (default: `gpt-5.4-mini`)
+- `JOBPLANNER_DATA_DIR` — personal-data root directory (default: repo's `data/`).
+  When set, `experience.yaml` and `market/skill_tracker.db` are read from this
+  location instead of the repo. Templates and guidelines stay under the repo's
+  `data/` regardless. See "Personal Data Sync" below for cross-machine setup.
+
+## Personal Data Sync (Cross-Laptop)
+The experience bank and skill-tracker DB are personal data that can be synced
+across machines via Google Drive for Desktop (or any folder-sync tool) by
+pointing `JOBPLANNER_DATA_DIR` at a shared location.
+
+**Windows (William's setup):**
+```powershell
+[Environment]::SetEnvironmentVariable('JOBPLANNER_DATA_DIR', 'D:\w4343\Documents\JobPlannerData', 'User')
+# Restart shell / VS Code so the new env var is picked up
+```
+
+**Mac (William's setup):**
+```bash
+echo 'export JOBPLANNER_DATA_DIR="$HOME/Documents/Github/JobPlannerData"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+The synced directory layout must mirror the repo's `data/`:
+```
+JobPlannerData/
+├── experience.yaml
+└── market/
+    └── skill_tracker.db
+```
+
+**Concurrency caveat:** the SQLite tracker DB is binary and cannot be merged.
+Wait for Google Drive to fully sync before switching laptops mid-edit, or you
+risk a conflict copy that loses bank suggestions. The `output/` folder is
+intentionally **not** synced — it's regenerable per-machine.
 
 ## Experience Bank Schema (V2 — Synthesis Mode)
 - Bullets in `experience.yaml` contain **factual descriptions** (`description`), not resume-ready text

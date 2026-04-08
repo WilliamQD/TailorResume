@@ -244,7 +244,7 @@ def market_report(ctx: click.Context, sector: str | None, cross_sector: bool) ->
 
     settings = ctx.obj["settings"]
     bank = load_bank(settings.bank_path)
-    db_path = settings.output_dir.parent / "data" / "market" / "skill_tracker.db"
+    db_path = settings.tracker_db_path
 
     if not db_path.exists():
         click.echo("No market data yet. Run 'jobplanner tailor' on some JDs to accumulate data.")
@@ -278,7 +278,7 @@ def suggest_projects(ctx: click.Context, sector: str) -> None:
     settings = ctx.obj["settings"]
     bank = load_bank(settings.bank_path)
     client = create_client(settings)
-    db_path = settings.output_dir.parent / "data" / "market" / "skill_tracker.db"
+    db_path = settings.tracker_db_path
 
     if not db_path.exists():
         click.echo("No market data yet. Run the pipeline on some JDs first.")

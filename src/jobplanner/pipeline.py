@@ -144,7 +144,7 @@ def run_pipeline(
 
     # --- Stage 2: Enrich context ---
     _emit("Stage 2/9: Building enriched context...")
-    tracker_db = settings.output_dir.parent / "data" / "market" / "skill_tracker.db"
+    tracker_db = settings.tracker_db_path
     enriched = build_enriched_context(
         role_type=result.jd.role_type,
         bank=bank,

@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +51,14 @@ def provider_for_model(alias: str) -> Literal["claude", "openai"]:
     raise ValueError(f"Unknown model: {alias!r}. Use one of: {list(MODEL_MAP.keys())}")
 
 
+def _default_data_dir() -> Path:
+    """Resolve the personal-data root: JOBPLANNER_DATA_DIR env var, else repo's data/."""
+    env = os.environ.get("JOBPLANNER_DATA_DIR", "").strip()
+    if env:
+        return Path(env)
+    return _PROJECT_ROOT / "data"
+
+
 class Settings(BaseModel):
     """Runtime settings — populated from env vars and CLI flags."""
 
@@ -58,7 +66,13 @@ class Settings(BaseModel):
     anthropic_api_key: str = Field(default="", description="Anthropic API key")
     openai_api_key: str = Field(default="", description="OpenAI API key")
 
-    bank_path: Path = Field(default=_PROJECT_ROOT / "data" / "experience.yaml")
+    # Personal-data root: contains experience.yaml and market/skill_tracker.db
+    # Defaults to JOBPLANNER_DATA_DIR env var or repo's data/
+    data_dir: Path = Field(default_factory=_default_data_dir)
+    bank_path: Path | None = None
+    tracker_db_path: Path | None = None
+
+    # Template_dir always points at the repo (templates are public assets, not personal data)
     template_dir: Path = Field(default=_PROJECT_ROOT / "data" / "templates")
     output_dir: Path = Field(default=_PROJECT_ROOT / "output")
 
@@ -69,6 +83,15 @@ class Settings(BaseModel):
     max_retries_for_one_page: int = 8
 
     latex_compiler: str = "tectonic"
+
+    @model_validator(mode="after")
+    def _resolve_data_paths(self) -> "Settings":
+        """Fill bank_path and tracker_db_path from data_dir if not explicitly set."""
+        if self.bank_path is None:
+            self.bank_path = self.data_dir / "experience.yaml"
+        if self.tracker_db_path is None:
+            self.tracker_db_path = self.data_dir / "market" / "skill_tracker.db"
+        return self
 
     @property
     def resolved_model(self) -> str:
