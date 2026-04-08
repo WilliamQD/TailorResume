@@ -151,6 +151,7 @@ def build_tailor_user_prompt(
     bank_yaml: str,
     max_exp_bullets: int = 3,
     max_proj_bullets: int = 2,
+    max_projects: int = 2,
     enriched_context: "EnrichedContext | None" = None,
 ) -> str:
     """Build the user message for the tailoring call."""
@@ -203,7 +204,7 @@ def build_tailor_user_prompt(
 - Tailor the skills section labels and ordering to match what this JD values.
 - Inferred skills may appear in the skills section lines for keyword matching.
 
-Select ALL relevant experiences and exactly 2 projects. Use the maximum bullets
+Select ALL relevant experiences and exactly {max_projects} projects. Use the maximum bullets
 per entry. Synthesize bullets to align with this job description. Return the
 TailoredResume JSON.
 """

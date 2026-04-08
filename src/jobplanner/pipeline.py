@@ -200,9 +200,10 @@ def run_pipeline(
     out_dir = _make_output_dir(settings, result.jd)
     result.output_dir = out_dir
     file_stem = _resume_filename(bank, result.jd)
-    min_fill_ratio = 0.85  # page must be at least 85% full
+    min_fill_ratio = 0.90  # page must be at least 90% full
 
-    underfull_retried = False
+    underfull_attempts = 0
+    max_underfull_retries = 3
     pdf_path = None
     max_attempts = settings.max_retries_for_one_page
 
@@ -241,12 +242,20 @@ def run_pipeline(
         _emit(f"  -> {pdf_path.name} ({pages} page, {fill:.0%} full)")
         result.pdf_path = pdf_path
 
-        if fill < min_fill_ratio and not underfull_retried:
-            underfull_retried = True
-            _emit(f"  -> Page only {fill:.0%} full (need {min_fill_ratio:.0%}). "
-                  "Re-tailoring with more content...")
-            settings.max_bullets_per_experience = min(settings.max_bullets_per_experience + 1, 5)
-            settings.max_bullets_per_project = min(settings.max_bullets_per_project + 1, 3)
+        if fill < min_fill_ratio and underfull_attempts < max_underfull_retries:
+            underfull_attempts += 1
+            if underfull_attempts == 1:
+                settings.max_bullets_per_project = 3
+                _emit(f"  -> Page {fill:.0%} full (need {min_fill_ratio:.0%}). "
+                      "Retry 1: bumping project bullets to 3...")
+            elif underfull_attempts == 2:
+                settings.max_bullets_per_experience = 4
+                _emit(f"  -> Page {fill:.0%} full (need {min_fill_ratio:.0%}). "
+                      "Retry 2: bumping experience bullets to 4...")
+            else:
+                settings.max_projects = 3
+                _emit(f"  -> Page {fill:.0%} full (need {min_fill_ratio:.0%}). "
+                      "Retry 3: allowing a 3rd project...")
             result.tailored = tailor_resume(client, bank, result.jd, settings, enriched_context=enriched)
             n_exp = len(result.tailored.selected_experiences)
             n_proj = len(result.tailored.selected_projects)

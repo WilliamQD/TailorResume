@@ -64,6 +64,7 @@ class Settings(BaseModel):
 
     max_bullets_per_experience: int = 3
     max_bullets_per_project: int = 2
+    max_projects: int = 2
     max_total_bullets: int = 16
     max_retries_for_one_page: int = 8
 
@@ -103,10 +104,12 @@ def load_settings(**overrides: object) -> Settings:
     """Create settings from env vars → PowerShell SecretStore fallback, with optional overrides."""
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "") or _get_secret("JP-claude-apikey")
     openai_key = os.environ.get("OPENAI_API_KEY", "") or _get_secret("JP-openai-apikey")
+    # overrides["model"] takes precedence over JOBPLANNER_MODEL env var
+    model = overrides.pop("model", os.environ.get("JOBPLANNER_MODEL", "gpt-5.4-mini"))
 
     return Settings(
         anthropic_api_key=anthropic_key,
         openai_api_key=openai_key,
-        model=os.environ.get("JOBPLANNER_MODEL", "gpt-5.4-mini"),
+        model=model,  # type: ignore[arg-type]
         **overrides,  # type: ignore[arg-type]
     )

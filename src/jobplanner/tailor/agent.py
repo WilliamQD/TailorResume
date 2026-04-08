@@ -147,6 +147,7 @@ def tailor_resume(
         bank_yaml=bank_yaml,
         max_exp_bullets=settings.max_bullets_per_experience,
         max_proj_bullets=settings.max_bullets_per_project,
+        max_projects=settings.max_projects,
         enriched_context=enriched_context,
     )
 
