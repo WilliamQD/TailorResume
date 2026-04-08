@@ -167,7 +167,7 @@ class SkillsSection(BaseModel):
 class SelectedCoursework(BaseModel):
     """Coursework to display per education entry."""
     institution: str = Field(..., description="Must match an institution in the bank")
-    courses: list[str] = Field(default_factory=list, description="Selected courses (max 8)")
+    courses: list[str] = Field(default_factory=list, description="Selected courses (max 4 per school)")
 
 
 class TailoredResume(BaseModel):
@@ -178,5 +178,5 @@ class TailoredResume(BaseModel):
     skills: SkillsSection = Field(default_factory=SkillsSection)
     selected_coursework: list[SelectedCoursework] = Field(
         default_factory=list,
-        description="Coursework to display per education entry (max 8 courses each)",
+        description="Coursework per education entry (max 4 per school, 8 total, no cross-school topic overlap)",
     )

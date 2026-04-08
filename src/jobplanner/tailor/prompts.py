@@ -126,7 +126,10 @@ technical tools. Follow these rules:
 # COURSEWORK SELECTION
 
 Select the most relevant courses for EACH education entry. Rules:
-- Maximum 6 courses per school
+- Maximum 4 courses per school, maximum 8 courses total across all schools
+- Do NOT select courses that cover the same topic area across schools.
+  For example, "Machine Learning" at one school and "Intermediate Machine Learning"
+  at another tell the same story — pick only the more advanced or recent one.
 - Pick courses whose names align with the JD's required skills and domain
 - For a DS/stats role, prioritize statistics, ML, and methods courses
 - For an SWE role, prioritize CS, algorithms, and systems courses

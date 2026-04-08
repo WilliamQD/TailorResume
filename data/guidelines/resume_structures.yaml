@@ -23,7 +23,7 @@ swe:
   bullet_ordering: "Lead with architecture/scale decisions, then impact metrics, then team/process"
   coursework_strategy: >
     Prioritize: algorithms, data structures, systems, OS, distributed systems, databases.
-    Cut: intro programming, writing, general electives. Max 5 courses for SWE roles.
+    Cut: intro programming, writing, general electives. Max 4 courses for SWE roles.
   skills_label_guidance: >
     Line 1: Languages (Python, Go, Java, C++, TypeScript, SQL)
     Line 2: Frameworks & Infra (React, FastAPI, Kubernetes, Docker, AWS, Kafka)
@@ -50,7 +50,7 @@ ds:
   coursework_strategy: >
     Prioritize: statistics, ML, biostatistics, causal inference, Bayesian methods,
     linear models, survival analysis, experimental design.
-    Cut: intro stats, general writing, non-quantitative electives. Max 6 per school.
+    Cut: intro stats, general writing, non-quantitative electives. Max 4 per school.
   skills_label_guidance: >
     Line 1: Statistical Methods (Bayesian Inference, Survival Analysis, Mixed-Effects Models, A/B Testing)
     Line 2: ML & Modeling (scikit-learn, PyTorch, XGBoost, Stan, R, Python)
@@ -76,7 +76,7 @@ mle:
   bullet_ordering: "Lead with production impact/scale, then model improvement, then methodology"
   coursework_strategy: >
     Prioritize: ML, deep learning, systems, distributed computing, probability/stats.
-    Max 5 courses.
+    Max 4 courses.
   skills_label_guidance: >
     Line 1: ML Frameworks (PyTorch, TensorFlow, Hugging Face, scikit-learn, XGBoost)
     Line 2: MLOps & Infra (MLflow, Kubeflow, Docker, Kubernetes, AWS SageMaker, Triton)
@@ -142,7 +142,7 @@ biostats:
   bullet_ordering: "Lead with study design/method, then statistical result, then clinical impact"
   coursework_strategy: >
     Clinical trials, survival analysis, longitudinal data, Bayesian methods,
-    categorical data, epidemiology. All relevant, max 6 per school.
+    categorical data, epidemiology. All relevant, max 4 per school.
   skills_label_guidance: >
     Line 1: Statistical Methods (Survival Analysis, Mixed Models, GEE, Bayesian Methods, Adaptive Designs)
     Line 2: Software (SAS, R, Python, STATA, NONMEM)
@@ -161,7 +161,7 @@ analyst:
   top_third_strategy: >
     Education → first experience with business impact ($, efficiency, stakeholders served).
   bullet_ordering: "Lead with business impact, then method/tool, then adoption/scale"
-  coursework_strategy: "Statistics, economics, data analysis, business. Max 5."
+  coursework_strategy: "Statistics, economics, data analysis, business. Max 4."
   skills_label_guidance: >
     Line 1: Analytics (SQL, Python, R, Excel, Tableau, Power BI)
     Line 2: Methods (A/B Testing, Regression, Forecasting, Statistical Analysis)
@@ -180,7 +180,7 @@ research:
   top_third_strategy: >
     Education → first experience with publication/contribution signal.
   bullet_ordering: "Lead with finding/contribution, then method, then impact/venue"
-  coursework_strategy: "Research methods, statistics, domain-specific theory. Max 6."
+  coursework_strategy: "Research methods, statistics, domain-specific theory. Max 4."
   skills_label_guidance: >
     Line 1: Methods (Causal Inference, Experimental Design, Survey Methods, Meta-Analysis)
     Line 2: Software (R, Python, Stata, SPSS, MATLAB, LaTeX)

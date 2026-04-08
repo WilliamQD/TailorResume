@@ -71,8 +71,8 @@ def _trim_content(tailored: TailoredResume) -> str:
     # 5. Trim coursework
     if tailored.selected_coursework:
         for sc in tailored.selected_coursework:
-            if len(sc.courses) > 4:
-                sc.courses = sc.courses[:4]
+            if len(sc.courses) > 3:
+                sc.courses = sc.courses[:3]
                 return f"trimmed coursework for {sc.institution}"
 
     return ""

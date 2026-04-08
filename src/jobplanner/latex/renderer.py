@@ -36,6 +36,41 @@ def _escape_latex(text: str) -> str:
     return _LATEX_ESCAPE_RE.sub(lambda m: _LATEX_SPECIAL[m.group()], text)
 
 
+_COURSE_PREFIXES = re.compile(
+    r"^(intro(duction)?\s+to|advanced|intermediate|topics\s+in|foundations\s+of|"
+    r"principles\s+of|elements\s+of)\s+",
+    re.IGNORECASE,
+)
+
+
+def _normalize_course(name: str) -> str:
+    """Strip common prefixes/suffixes to extract the core course concept."""
+    return _COURSE_PREFIXES.sub("", name.strip()).strip().lower()
+
+
+def _dedup_coursework(
+    coursework_map: dict[str, list[str]],
+    per_school_cap: int = 4,
+    total_cap: int = 8,
+) -> dict[str, list[str]]:
+    """Remove cross-school topic overlaps and enforce caps."""
+    seen: set[str] = set()
+    result: dict[str, list[str]] = {}
+    total = 0
+    for institution, courses in coursework_map.items():
+        deduped: list[str] = []
+        for c in courses:
+            if len(deduped) >= per_school_cap or total >= total_cap:
+                break
+            key = _normalize_course(c)
+            if key not in seen:
+                seen.add(key)
+                deduped.append(c)
+                total += 1
+        result[institution] = deduped
+    return result
+
+
 @dataclass
 class SpacingPreset:
     """Tunable spacing parameters for the 1-page retry loop."""
@@ -113,16 +148,16 @@ def build_template_context(
         )
         projects.append(rp)
 
-    # Build a map of selected coursework by institution
+    # Build a map of selected coursework by institution with concept-level dedup
     coursework_map: dict[str, list[str]] = {}
     for sc in tailored.selected_coursework:
         coursework_map[sc.institution] = sc.courses
+    coursework_map = _dedup_coursework(coursework_map)
 
     # Education
     education = []
     for edu in bank.education:
-        # Use LLM-selected coursework if available, else fall back to bank (capped at 8)
-        courses = coursework_map.get(edu.institution, edu.coursework[:6])
+        courses = coursework_map.get(edu.institution, edu.coursework[:4])
         education.append({
             "institution": _escape_latex(edu.institution),
             "degree": _escape_latex(edu.degree),
