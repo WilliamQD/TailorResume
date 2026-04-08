@@ -33,3 +33,6 @@ Thumbs.db
 
 # Market intelligence DB (personal data, not tracked)
 data/market/
+
+# Reference screenshots — keep on disk but don't track
+data/examples/*.png

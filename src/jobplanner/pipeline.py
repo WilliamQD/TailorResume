@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
@@ -77,15 +78,33 @@ def _trim_content(tailored: TailoredResume) -> str:
     return ""
 
 
+def _sanitize(text: str, max_len: int = 30) -> str:
+    """Lowercase, replace spaces/special chars with underscores, truncate."""
+    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")[:max_len]
+
+
 def _make_output_dir(settings: Settings, jd: ParsedJD) -> Path:
-    """Create a timestamped output directory."""
+    """Create a date-first nested output directory: output/YYYY-MM-DD/{company}_{title}/."""
     date_str = datetime.now().strftime("%Y-%m-%d")
-    company = jd.company.replace(" ", "_").lower()[:30] or "unknown"
-    role = jd.role_type or "role"
-    dir_name = f"{date_str}_{company}_{role}"
-    out = settings.output_dir / dir_name
+    company = _sanitize(jd.company) or "unknown"
+    title = _sanitize(jd.title, 30) or (jd.role_type or "role")
+    base_name = f"{company}_{title}"
+    date_dir = settings.output_dir / date_str
+    out = date_dir / base_name
+    counter = 2
+    while out.exists() and any(out.glob("*.pdf")):
+        out = date_dir / f"{base_name}_{counter}"
+        counter += 1
     out.mkdir(parents=True, exist_ok=True)
     return out
+
+
+def _resume_filename(bank: ExperienceBank, jd: ParsedJD) -> str:
+    """Build a descriptive resume filename stem, e.g. 'william_zhang_apple_swe'."""
+    name = _sanitize(bank.meta.name, 40) or "resume"
+    company = _sanitize(jd.company, 20) or "company"
+    title = _sanitize(jd.title, 20) or (jd.role_type or "role")
+    return f"{name}_{company}_{title}"
 
 
 def run_pipeline(
@@ -180,6 +199,7 @@ def run_pipeline(
     # --- Stage 7+8: Render LaTeX + Compile PDF (with retry loop) ---
     out_dir = _make_output_dir(settings, result.jd)
     result.output_dir = out_dir
+    file_stem = _resume_filename(bank, result.jd)
     min_fill_ratio = 0.85  # page must be at least 85% full
 
     underfull_retried = False
@@ -195,7 +215,7 @@ def run_pipeline(
         tex_content = render_latex(
             result.tailored, bank, settings.template_dir, spacing=spacing,
         )
-        tex_path = out_dir / "tailored.tex"
+        tex_path = out_dir / f"{file_stem}.tex"
         tex_path.write_text(tex_content, encoding="utf-8")
         result.tex_path = tex_path
 
