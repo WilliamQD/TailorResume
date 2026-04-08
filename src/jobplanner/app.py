@@ -1211,6 +1211,7 @@ with tab_health:
         get_all_suggestions, get_suggestion_counts, dismiss_suggestion, dismiss_all_stale,
         check_for_conflicts,
     )
+    from jobplanner.bank.locator import find_bullet_line, open_in_vscode
 
     _settings_tmp = load_settings()
     _tracker_db = _settings_tmp.tracker_db_path
@@ -1280,7 +1281,7 @@ with tab_health:
             if len(jds) > 3:
                 jds_text = f"{jds_text} (+{len(jds) - 3} more)"
 
-            col_card, col_btn = st.columns([9, 1])
+            col_card, col_edit, col_btn = st.columns([8, 1, 1])
             with col_card:
                 st.markdown(
                     f'<div class="bh-card">'
@@ -1295,6 +1296,24 @@ with tab_health:
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+            with col_edit:
+                if st.button("Edit", key=f"bh_edit_{s['id']}",
+                             help="Open experience.yaml at this bullet in VS Code"):
+                    line = find_bullet_line(
+                        _settings_tmp.bank_path, s["source_id"], s["bullet_index"],
+                    )
+                    if line is None:
+                        st.warning(
+                            f"Could not locate `{s['source_id']}` in "
+                            f"`{_settings_tmp.bank_path}`. Open the file manually."
+                        )
+                    elif open_in_vscode(_settings_tmp.bank_path, line):
+                        st.toast(f"Opened experience.yaml at line {line}")
+                    else:
+                        st.warning(
+                            f"VS Code (`code`) not found on PATH. "
+                            f"Open `{_settings_tmp.bank_path}` at line {line} manually."
+                        )
             with col_btn:
                 if st.button("X", key=f"bh_dismiss_{s['id']}",
                              help="Dismiss this suggestion"):
@@ -1309,7 +1328,7 @@ with tab_health:
                 jds = json.loads(s["source_jds"]) if isinstance(s["source_jds"], str) else s["source_jds"]
                 jds_text = ", ".join(jds[-3:])
 
-                col_card, col_btn = st.columns([9, 1])
+                col_card, col_edit, col_btn = st.columns([8, 1, 1])
                 with col_card:
                     st.markdown(
                         f'<div class="bh-card stale-card">'
@@ -1323,6 +1342,24 @@ with tab_health:
                         f'</div>',
                         unsafe_allow_html=True,
                     )
+                with col_edit:
+                    if st.button("Edit", key=f"bh_edit_stale_{s['id']}",
+                                 help="Open experience.yaml at this bullet in VS Code"):
+                        line = find_bullet_line(
+                            _settings_tmp.bank_path, s["source_id"], s["bullet_index"],
+                        )
+                        if line is None:
+                            st.warning(
+                                f"Could not locate `{s['source_id']}` in "
+                                f"`{_settings_tmp.bank_path}`. Open the file manually."
+                            )
+                        elif open_in_vscode(_settings_tmp.bank_path, line):
+                            st.toast(f"Opened experience.yaml at line {line}")
+                        else:
+                            st.warning(
+                                f"VS Code (`code`) not found on PATH. "
+                                f"Open `{_settings_tmp.bank_path}` at line {line} manually."
+                            )
                 with col_btn:
                     if st.button("X", key=f"bh_dismiss_stale_{s['id']}",
                                  help="Dismiss this suggestion"):
