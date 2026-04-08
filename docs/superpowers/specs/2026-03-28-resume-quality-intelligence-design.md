@@ -552,8 +552,14 @@ Added to tailor prompt as soft suggestion:
 - Validate YAML files parse correctly
 - Ensure guidelines cover all supported role types
 
+### JD Requirements for Verification
+All test JDs used in verification must be:
+- **Real and recent** (2026, from well-known companies like FAANG, top startups, major enterprises)
+- **Entry-level / new grad** seniority (or roughly equivalent — no senior, staff, lead, intern, or part-time)
+- Sourced fresh at verification time to reflect current market expectations
+
 ### Phase 2 Verification
-- Run pipeline with enrichment on a real JD
+- Run pipeline with enrichment on a real JD (per JD requirements above)
 - Compare output quality before/after enrichment (same JD, same model)
 - Check enrichment token count is within budget (~1,050-1,700)
 - Verify existing tests still pass
@@ -573,7 +579,7 @@ Added to tailor prompt as soft suggestion:
 - Process 10+ JDs for one sector and verify market-boosted skills appear in enrichment
 
 ### End-to-End
-- Run full pipeline on 3 JDs (one each: DS, SWE, MLE) with all features enabled
+- Run full pipeline on 3 real JDs (one each: DS, SWE, MLE) with all features enabled
 - Compare ATS scores and keyword coverage before/after
 - Manually review resume quality against guidelines
 - Verify report.json contains all new fields
