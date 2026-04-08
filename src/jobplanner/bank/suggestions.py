@@ -197,3 +197,20 @@ def mark_stale(db_path: Path) -> int:
         )
         con.commit()
         return cur.rowcount
+
+
+def check_for_conflicts(db_path: Path) -> list[Path]:
+    """Return any sibling files that look like Google Drive conflict copies of db_path.
+
+    Google Drive for Desktop creates conflict copies (e.g. ``skill_tracker (1).db``,
+    ``skill_tracker - Conflict copy from <machine>.db``) when the same binary file
+    is edited on two machines before sync completes. SQLite databases cannot be
+    auto-merged, so the user must pick a winner manually.
+    """
+    if not db_path.parent.exists():
+        return []
+    canonical = db_path.name
+    return sorted(
+        p for p in db_path.parent.glob(f"{db_path.stem}*.db")
+        if p.name != canonical and p.is_file()
+    )

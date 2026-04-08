@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
@@ -10,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 
 import click
+
+log = logging.getLogger(__name__)
 
 from jobplanner.bank.loader import load_bank
 from jobplanner.bank.schema import ExperienceBank, ParsedJD, TailoredResume
@@ -202,8 +205,17 @@ def run_pipeline(
         try:
             from jobplanner.bank.suggestions import (
                 init_tables, merge_suggestions, check_bank_staleness,
-                mark_stale, update_bank_hash,
+                mark_stale, update_bank_hash, check_for_conflicts,
             )
+            conflicts = check_for_conflicts(tracker_db)
+            if conflicts:
+                _emit(f"  [!] Google Drive conflict copies detected next to {tracker_db.name}:")
+                for cp in conflicts:
+                    _emit(f"      - {cp.name}")
+                _emit("      Resolve manually: pick the version to keep, rename it to "
+                      f"{tracker_db.name}, delete the rest.")
+                log.warning("Google Drive conflict copies detected near %s: %s",
+                            tracker_db, [str(p) for p in conflicts])
             init_tables(tracker_db)
             if check_bank_staleness(tracker_db, settings.bank_path):
                 stale_count = mark_stale(tracker_db)

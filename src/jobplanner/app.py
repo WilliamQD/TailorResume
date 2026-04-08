@@ -1209,10 +1209,24 @@ with tab_tailor:
 with tab_health:
     from jobplanner.bank.suggestions import (
         get_all_suggestions, get_suggestion_counts, dismiss_suggestion, dismiss_all_stale,
+        check_for_conflicts,
     )
 
     _settings_tmp = load_settings()
     _tracker_db = _settings_tmp.tracker_db_path
+
+    _conflicts = check_for_conflicts(_tracker_db)
+    if _conflicts:
+        _conflict_lines = "\n".join(f"- `{p.name}`" for p in _conflicts)
+        st.error(
+            "**Google Drive conflict copies detected next to "
+            f"`{_tracker_db.name}`:**\n\n"
+            f"{_conflict_lines}\n\n"
+            "Pick the version you want to keep, rename it to "
+            f"`{_tracker_db.name}`, and delete the others. "
+            "SQLite databases can't be auto-merged, so any writes until you "
+            "resolve this may be lost on the next sync."
+        )
 
     if not _tracker_db.exists():
         st.markdown("""
