@@ -34,14 +34,23 @@ streamlit run src/jobplanner/app.py              # Launch web UI
 
 ## API Keys
 
-Keys are resolved in order: **env var → PowerShell SecretStore fallback**.
+Keys are resolved in order: **env var → Python `keyring` → PowerShell SecretStore fallback**.
+The keyring tier is cross-platform (macOS Keychain, Windows Credential Manager,
+Linux Secret Service); the PowerShell tier is Windows-only and skipped on other
+platforms.
 
-| Provider | Env var | SecretStore name |
-|----------|---------|-----------------|
-| Claude | `ANTHROPIC_API_KEY` | `JP-claude-apikey` |
-| OpenAI | `OPENAI_API_KEY` | `JP-openai-apikey` |
+| Provider | Env var | Keyring/SecretStore name |
+|----------|---------|--------------------------|
+| Claude | `ANTHROPIC_API_KEY` | `JP-claude-apikey` (service: `jobplanner`) |
+| OpenAI | `OPENAI_API_KEY` | `JP-openai-apikey` (service: `jobplanner`) |
 
-**SecretStore setup** (PowerShell, one-time):
+**Keyring setup (cross-platform, recommended for Mac/Linux):**
+```bash
+python -c "import keyring; keyring.set_password('jobplanner', 'JP-claude-apikey', 'sk-ant-...')"
+python -c "import keyring; keyring.set_password('jobplanner', 'JP-openai-apikey', 'sk-...')"
+```
+
+**PowerShell SecretStore setup (Windows-only, still supported as fallback):**
 ```powershell
 Install-Module Microsoft.PowerShell.SecretManagement -Scope CurrentUser -Force
 Install-Module Microsoft.PowerShell.SecretStore -Scope CurrentUser -Force

@@ -5,10 +5,16 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
+
+try:
+    import keyring  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover — keyring is in dependencies but guard anyway
+    keyring = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 
@@ -102,8 +108,26 @@ class Settings(BaseModel):
         return provider_for_model(self.model)
 
 
-def _get_secret(name: str) -> str:
-    """Retrieve a secret from PowerShell SecretStore. Returns '' on any failure."""
+def _get_secret_keyring(name: str) -> str:
+    """Look up secret in the system keyring (cross-platform).
+
+    Uses macOS Keychain on Mac, Windows Credential Manager on Windows,
+    Secret Service on Linux. Returns '' on any failure or missing dep.
+    """
+    if keyring is None:
+        return ""
+    try:
+        value = keyring.get_password("jobplanner", name)
+        return value or ""
+    except Exception:
+        log.debug("keyring lookup failed for %s", name, exc_info=True)
+        return ""
+
+
+def _get_secret_powershell(name: str) -> str:
+    """Look up secret in PowerShell SecretStore. Windows-only."""
+    if sys.platform != "win32":
+        return ""
     try:
         result = subprocess.run(
             [
@@ -123,8 +147,13 @@ def _get_secret(name: str) -> str:
     return ""
 
 
+def _get_secret(name: str) -> str:
+    """Cross-platform secret lookup: keyring → PowerShell SecretStore → ''."""
+    return _get_secret_keyring(name) or _get_secret_powershell(name)
+
+
 def load_settings(**overrides: object) -> Settings:
-    """Create settings from env vars → PowerShell SecretStore fallback, with optional overrides."""
+    """Create settings from env vars → keyring → PowerShell SecretStore fallback, with optional overrides."""
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "") or _get_secret("JP-claude-apikey")
     openai_key = os.environ.get("OPENAI_API_KEY", "") or _get_secret("JP-openai-apikey")
     # overrides["model"] takes precedence over JOBPLANNER_MODEL env var
