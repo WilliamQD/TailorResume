@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import base64
+import html
 import json
+import os
 from pathlib import Path
 
 import fitz
@@ -51,6 +53,7 @@ st.markdown("""
     --success: #3fcf70;
     --danger: #e85858;
     --warning: #e8b43a;
+    --app-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
 }
 
 /* ---- Global ---- */
@@ -59,10 +62,14 @@ st.markdown("""
    context that breaks Streamlit's scroll container after results load, locking the
    page.  Do NOT add position:relative here either — it breaks Streamlit's layout.
    The SVG has opacity='0.025' baked in so no CSS opacity is needed. */
-.stApp {
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"] {
     background-color: var(--bg-primary) !important;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E") !important;
+    background-image: var(--app-noise) !important;
     background-size: 256px 256px !important;
+}
+.stApp {
     font-family: 'Source Serif 4', Georgia, serif !important;
 }
 
@@ -83,6 +90,11 @@ section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, var(--bg-card) 0%, #0f1014 100%) !important;
     border-right: 1px solid var(--border) !important;
 }
+section[data-testid="stSidebar"] > div:first-child,
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"],
+section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+    background: transparent !important;
+}
 section[data-testid="stSidebar"] > div:first-child {
     padding-top: 1.6rem !important;
 }
@@ -99,12 +111,28 @@ section[data-testid="stSidebar"] .stMarkdown .stCaption p {
  * IMPORTANT: Target only form control labels, NOT expander/button/summary elements.
  * Applying font-family to expander headers breaks Streamlit's icon font (renders as "arr").
  * Always use data-testid-scoped selectors here, never bare `label`.
+ *
+ * DEFENSE-IN-DEPTH: the rule below is GLOBAL (unscoped) so every form widget
+ * anywhere in the app — sidebar, main tab, future tabs, modals — gets a
+ * readable label by default. Previous bugs had labels scoped ONLY to
+ * `section[data-testid="stSidebar"]`, which made every new widget added
+ * outside the sidebar invisible until someone noticed and patched CSS.
+ * Do NOT re-scope this rule. Add new widget classes here when Streamlit
+ * ships new ones.
  */
-section[data-testid="stSidebar"] .stSelectbox label,
-section[data-testid="stSidebar"] .stRadio > label,
-section[data-testid="stSidebar"] .stCheckbox > label,
-section[data-testid="stSidebar"] .stTextInput label,
-section[data-testid="stSidebar"] .stNumberInput label {
+.stSelectbox label,
+.stMultiSelect label,
+.stRadio > label,
+.stCheckbox > label,
+.stTextInput label,
+.stNumberInput label,
+.stTextArea label,
+.stDateInput label,
+.stTimeInput label,
+.stSlider label,
+.stColorPicker label,
+.stFileUploader label,
+.stToggle label {
     color: var(--text-primary) !important;
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 0.82rem !important;
@@ -156,7 +184,7 @@ section[data-testid="stSidebar"] hr {
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
     margin-bottom: 14px;
-    margin-top: 8px;
+    margin-top: 2px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -186,8 +214,15 @@ section[data-testid="stSidebar"] hr {
     padding: 14px 16px !important;
     transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
-/* BaseWeb textarea wrapper — some Streamlit versions darken this on re-render */
-.stTextArea [data-baseweb="textarea"] {
+/* BaseWeb textarea wrapper — some Streamlit versions darken this on re-render.
+ * Streamlit nests: stTextArea > stTextAreaRootElement[data-baseweb=textarea] >
+ *   div[data-baseweb=base-input] > <textarea>
+ * All three layers ship with rgb(240,242,246) by default and must be forced
+ * to the dark card color, otherwise the base-input wrapper leaks light
+ * through as a ~1138x218 white rectangle against the dark theme.
+ * See tests/test_app_visual.py::test_no_large_white_elements — regression gate. */
+.stTextArea [data-baseweb="textarea"],
+.stTextArea [data-baseweb="base-input"] {
     background-color: var(--bg-card) !important;
 }
 .stTextArea textarea::placeholder {
@@ -496,6 +531,13 @@ button[data-testid="stBaseButton-secondary"] p {
 [data-testid="stStatusWidget"] {
     border: 1px solid var(--border) !important;
     border-radius: 4px !important;
+    margin-bottom: 8px !important;
+}
+/* Tighten the default Streamlit vertical block gap in the main tab so the
+   collapsed pipeline status widget sits directly above the results header
+   instead of leaving ~40px of dead space. */
+section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
+    gap: 0.5rem !important;
 }
 /* Code block used for progress log */
 [data-testid="stCode"],
@@ -566,16 +608,23 @@ section[data-testid="stSidebar"] [data-testid="stExpanderContent"] {
     color: var(--text-primary) !important;
 }
 
-/* ---- Scroll safety net (defense-in-depth) ---- */
-/* The primary scroll fix is using position:absolute (not fixed) on .stApp::before
-   and capping the PDF frame height.  This overflow-y rule is kept as a safety net
-   in case Streamlit's own CSS ever sets overflow:hidden on the main container.
-   Do NOT remove this — and do NOT remove the position:absolute fix above. */
-section[data-testid="stMain"] {
-    overflow-y: auto !important;
+/* ---- Streamlit layout theming ---- */
+/* Streamlit's native layout uses absolute positioning + internal scrolling:
+     .stApp / stAppViewContainer  →  position: absolute; inset: 0; overflow: hidden
+     stMain                       →  height: 100dvh; overflow: auto  (THE scroll container)
+     stSidebar                    →  flex-stretches to viewport height
+   This is the correct model. Do NOT override position, overflow, or height on
+   these containers — doing so breaks scroll containment and causes the sidebar
+   and backgrounds to stop at the viewport boundary while content overflows.
+   Only set background-color and cosmetic styles here. */
+html, body {
+    background-color: var(--bg-primary) !important;
 }
-.main .block-container {
+.main .block-container,
+.stMainBlockContainer,
+[data-testid="stMainBlockContainer"] {
     padding-bottom: 5rem !important;
+    max-width: none !important;
 }
 
 /* ---- Alert boxes ---- */
@@ -629,6 +678,30 @@ section[data-testid="stMain"] {
     font-size: 0.82rem;
     color: var(--danger);
     margin-top: 12px;
+}
+
+/* ---- Orphan wrap warning banner ---- */
+.orphan-warn {
+    padding: 8px 12px;
+    background: rgba(232, 180, 58, 0.08);
+    border: 1px solid rgba(232, 180, 58, 0.25);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--warning);
+    margin-top: 12px;
+}
+.orphan-warn .orphan-title {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+}
+.orphan-warn .orphan-item {
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 3px;
 }
 
 /* ---- Pipeline mode radio (sidebar) ---- */
@@ -913,13 +986,35 @@ UI_MODELS: dict[str, str] = {
 
 
 def render_pdf_preview(pdf_path: Path) -> bytes:
-    """Render the first page of a PDF to PNG bytes at 200 DPI."""
+    """Render the first page of a PDF to PNG, cropped to its content bbox.
+
+    Cropping to the content bbox keeps the preview tight around the resume
+    content instead of rendering the full US Letter page with a blank white
+    bottom strip.
+    """
     doc = fitz.open(str(pdf_path))
-    page = doc[0]
-    pix = page.get_pixmap(dpi=150)
-    png = pix.tobytes("png")
-    doc.close()
-    return png
+    try:
+        page = doc[0]
+        blocks = page.get_text("blocks")
+        if blocks:
+            x0 = min(b[0] for b in blocks)
+            y0 = min(b[1] for b in blocks)
+            x1 = max(b[2] for b in blocks)
+            y1 = max(b[3] for b in blocks)
+            margin = 24.0  # ~0.33" cosmetic breathing room
+            page_rect = page.rect
+            clip = fitz.Rect(
+                max(page_rect.x0, x0 - margin),
+                max(page_rect.y0, y0 - margin),
+                min(page_rect.x1, x1 + margin),
+                min(page_rect.y1, y1 + margin),
+            )
+            pix = page.get_pixmap(dpi=150, clip=clip)
+        else:
+            pix = page.get_pixmap(dpi=150)
+        return pix.tobytes("png")
+    finally:
+        doc.close()
 
 
 def load_report(output_dir: Path) -> dict | None:
@@ -991,6 +1086,33 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
+# UI-test fixture — populate session_state with a prebuilt PipelineResult
+# without calling any LLM API. Enabled by setting JOBPLANNER_UI_FIXTURE=1.
+#
+# This is the hook used by tests/test_app_smoke.py and the Playwright visual
+# smoke test. It's also useful during local UI development: export the env
+# var and restart streamlit to eyeball every results-panel code path without
+# spending tokens on a real pipeline run.
+# ---------------------------------------------------------------------------
+
+if os.environ.get("JOBPLANNER_UI_FIXTURE") == "1" and "result" not in st.session_state:
+    try:
+        # Import lazily so production runs don't pay for the test-only
+        # import surface (tests/ is not shipped in the wheel).
+        from tests.fixtures.ui_fixture import build_ui_fixture  # type: ignore
+
+        fixture_root = Path(
+            os.environ.get(
+                "JOBPLANNER_UI_FIXTURE_DIR",
+                str(Path.cwd() / ".jp_ui_fixture"),
+            )
+        )
+        st.session_state["result"] = build_ui_fixture(fixture_root)
+    except Exception as exc:  # surface, but don't block the app
+        st.warning(f"UI fixture load failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
 # Main area — tabs
 # ---------------------------------------------------------------------------
 
@@ -1010,6 +1132,24 @@ with tab_tailor:
         label_visibility="collapsed",
     )
 
+    # Stage 3: per-run tailoring controls
+    st.markdown('<div class="section-header">Tailoring Controls</div>', unsafe_allow_html=True)
+
+    # Role exclusion — populate from the bank if it loads cleanly
+    _role_options: list[str] = []
+    try:
+        _bank_for_opts = load_bank(load_settings().bank_path)
+        _role_options = [e.id for e in _bank_for_opts.experience] + \
+                        [p.id for p in _bank_for_opts.projects]
+    except Exception:
+        pass
+    exclude_roles_ui = st.multiselect(
+        "Exclude experiences/projects",
+        options=_role_options,
+        default=[],
+        help="source_ids to hard-exclude from this run (hidden from the LLM).",
+    )
+
     generate = st.button(
         "GENERATE RESUME",
         type="primary",
@@ -1020,6 +1160,7 @@ with tab_tailor:
     # Pipeline execution
     if generate and jd_text.strip():
         settings = load_settings(model=model_alias)
+        settings.exclude_roles = list(exclude_roles_ui)
         progress_lines: list[str] = []
 
         with st.status("Running pipeline...", expanded=True) as status:
@@ -1186,6 +1327,21 @@ with tab_tailor:
                         f'</div>',
                         unsafe_allow_html=True,
                     )
+
+            # Orphan wrap warnings (short words dangling on line 2)
+            if result.orphan_warnings:
+                items_html = "".join(
+                    f'<div class="orphan-item">{html.escape(o)}</div>'
+                    for o in result.orphan_warnings
+                )
+                st.markdown(
+                    f'<div class="orphan-warn">'
+                    f'<div class="orphan-title">! {len(result.orphan_warnings)} '
+                    f'orphan wrap(s) detected</div>'
+                    f'{items_html}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
             # ---- Quality Intelligence ----
             has_qi = (

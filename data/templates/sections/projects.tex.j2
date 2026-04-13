@@ -1,0 +1,15 @@
+<% if projects %>
+\section*{PROJECTS \& EXTRACURRICULARS}
+<% for proj in projects %>
+\textbf{<< proj.name >>}<% if proj.url %>~{\small(\href{<< proj.url >>}{Site})}<% endif %>\hfill \textit{<< proj.dates >>}\par
+<% if proj.subtitle %>\textit{<< proj.subtitle >>}\par
+<% endif %>
+\begin{itemize}
+<% for bullet in proj.bullets %>
+  \item << bullet >>
+<% endfor %>
+\end{itemize}
+<% if not loop.last %>\vspace{0.15em}
+<% endif %>
+<% endfor %>
+<% endif %>

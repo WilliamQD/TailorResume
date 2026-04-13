@@ -71,6 +71,73 @@ def _dedup_coursework(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Orphan-prevention: trim single-line paragraphs to fit
+# ---------------------------------------------------------------------------
+#
+# The skills lines and Relevant Coursework line are single paragraphs
+# rendered at \small. At our template width (7.3in text, 0.6in margins)
+# a \small line fits approximately 115-120 visible characters before it
+# wraps. LLM output regularly produces 130+ character lines (8 skills
+# instead of 7, or 4 long course names instead of 3), which wrap with a
+# 1-2 word orphan tail on line 2 and waste page space.
+#
+# These helpers drop items from the end of the list until the rendered
+# paragraph is guaranteed to fit on one printed line. This is the
+# structural fix for the orphan-wrap problem — the LaTeX preamble
+# (emergencystretch + ragged2e) only absorbs a few characters of overflow,
+# and cannot handle the 20-30 character overflows we see here.
+
+# Safety budget, measured against the live template. A 130-char skills
+# line renders with "architecture" orphaned on line 2 — so one-line
+# capacity is ~117 chars. We target 115 to leave 2 chars of headroom.
+_SKILLS_MAX_CHARS = 115
+_COURSEWORK_MAX_CHARS = 120
+
+
+def _trim_items_to_width(
+    prefix: str,
+    items: list[str],
+    max_chars: int,
+    separator: str = ", ",
+) -> list[str]:
+    """Drop items from the END of the list until ``prefix + join(items)`` fits.
+
+    Operates on visible text (pre-LaTeX-escape) so the character count
+    matches what the reader sees. Returns a (possibly shorter) copy of
+    ``items``; does not mutate the input.
+    """
+    trimmed = list(items)
+    while trimmed:
+        rendered = prefix + separator.join(trimmed)
+        if len(rendered) <= max_chars:
+            return trimmed
+        trimmed.pop()
+    return trimmed
+
+
+# ---------------------------------------------------------------------------
+# Section ordering by candidate level (Stage 2)
+# ---------------------------------------------------------------------------
+
+_SECTION_ORDER_BY_LEVEL: dict[str, list[str]] = {
+    "new_grad":    ["education", "skills", "experience", "projects"],
+    "entry_level": ["experience", "skills", "education", "projects"],
+    "mid_level":   ["skills", "experience", "projects", "education"],
+    "senior_ic":   ["skills", "experience", "projects", "education"],
+}
+
+
+def _section_order_for_level(candidate_level: str) -> list[str]:
+    """Return the ordered section list for a candidate level.
+
+    Falls back to the new_grad order for unknown levels.
+    """
+    return _SECTION_ORDER_BY_LEVEL.get(
+        candidate_level, _SECTION_ORDER_BY_LEVEL["new_grad"]
+    )
+
+
 @dataclass
 class SpacingPreset:
     """Tunable spacing parameters for the 1-page retry loop."""
@@ -158,6 +225,10 @@ def build_template_context(
     education = []
     for edu in bank.education:
         courses = coursework_map.get(edu.institution, edu.coursework[:4])
+        # Trim coursework to fit one printed line at \small
+        courses = _trim_items_to_width(
+            "Relevant Coursework: ", courses, _COURSEWORK_MAX_CHARS
+        )
         education.append({
             "institution": _escape_latex(edu.institution),
             "degree": _escape_latex(edu.degree),
@@ -166,6 +237,20 @@ def build_template_context(
             "coursework": [_escape_latex(c) for c in courses],
             "honors": [_escape_latex(h) for h in edu.honors],
         })
+
+    # Trim skills lines so each fits on one printed line at \small
+    line1_label = tailored.skills.line1_label
+    line1_items = _trim_items_to_width(
+        f"{line1_label}: ", tailored.skills.line1, _SKILLS_MAX_CHARS
+    )
+    line2_label = tailored.skills.line2_label
+    line2_items = _trim_items_to_width(
+        f"{line2_label}: ", tailored.skills.line2, _SKILLS_MAX_CHARS
+    )
+    line3_label = tailored.skills.line3_label
+    line3_items = _trim_items_to_width(
+        f"{line3_label}: ", tailored.skills.line3, _SKILLS_MAX_CHARS
+    )
 
     return {
         "meta": {
@@ -178,12 +263,12 @@ def build_template_context(
         },
         "education": education,
         "skills": {
-            "line1_label": _escape_latex(tailored.skills.line1_label),
-            "line1": [_escape_latex(s) for s in tailored.skills.line1],
-            "line2_label": _escape_latex(tailored.skills.line2_label),
-            "line2": [_escape_latex(s) for s in tailored.skills.line2],
-            "line3_label": _escape_latex(tailored.skills.line3_label),
-            "line3": [_escape_latex(s) for s in tailored.skills.line3],
+            "line1_label": _escape_latex(line1_label),
+            "line1": [_escape_latex(s) for s in line1_items],
+            "line2_label": _escape_latex(line2_label),
+            "line2": [_escape_latex(s) for s in line2_items],
+            "line3_label": _escape_latex(line3_label),
+            "line3": [_escape_latex(s) for s in line3_items],
         },
         "experiences": [
             {
@@ -205,6 +290,7 @@ def build_template_context(
             }
             for p in projects
         ],
+        "section_order": _section_order_for_level(bank.meta.candidate_level),
         "section_space_before": spacing.section_space_before,
         "section_space_after": spacing.section_space_after,
         "item_topsep": spacing.item_topsep,

@@ -31,12 +31,36 @@ def cli(ctx: click.Context, model: str | None) -> None:
 @click.option("--jd", required=True, type=click.Path(exists=True), help="Path to job description text file")
 @click.option("--skip-proofread", is_flag=True, help="Skip the LLM proofreading step")
 @click.option("--skip-critic", is_flag=True, help="Skip the critic/improve pass")
+@click.option(
+    "--exclude-roles",
+    multiple=True,
+    metavar="SOURCE_ID",
+    help="Experience/project source_ids to hard-exclude (repeatable)",
+)
+@click.option(
+    "--emphasize-roles",
+    multiple=True,
+    metavar="SOURCE_ID",
+    help="Experience/project source_ids to soft-boost (repeatable)",
+)
 @click.pass_context
-def tailor(ctx: click.Context, jd: str, skip_proofread: bool, skip_critic: bool) -> None:
+def tailor(
+    ctx: click.Context,
+    jd: str,
+    skip_proofread: bool,
+    skip_critic: bool,
+    exclude_roles: tuple[str, ...],
+    emphasize_roles: tuple[str, ...],
+) -> None:
     """Run the full resume tailoring pipeline."""
     from jobplanner.pipeline import run_pipeline
 
     settings = ctx.obj["settings"]
+    if exclude_roles:
+        settings.exclude_roles = list(exclude_roles)
+    if emphasize_roles:
+        settings.emphasize_roles = list(emphasize_roles)
+
     jd_text = Path(jd).read_text(encoding="utf-8")
 
     result = run_pipeline(jd_text, settings, skip_proofread=skip_proofread, skip_critic=skip_critic)

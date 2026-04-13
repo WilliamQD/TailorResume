@@ -18,7 +18,11 @@ from jobplanner.config import Settings
 from jobplanner.llm.base import LLMClient
 from jobplanner.tailor.prompts import TAILOR_SYSTEM_PROMPT, build_tailor_user_prompt
 
-def _bank_to_yaml_snippet(bank: ExperienceBank, jd: ParsedJD) -> str:
+def _bank_to_yaml_snippet(
+    bank: ExperienceBank,
+    jd: ParsedJD,
+    exclude_roles: list[str] | None = None,
+) -> str:
     """Serialize the bank to a compact YAML string for the prompt.
 
     Filtering strategy:
@@ -27,9 +31,11 @@ def _bank_to_yaml_snippet(bank: ExperienceBank, jd: ParsedJD) -> str:
     - Strips `context` field from bullets (saves ~200 tokens)
     - Omits global `skills` section (redundant with per-bullet skills)
     - Includes inferred_skills for the skills section
+    - Hard-excludes any experience/project whose id is in `exclude_roles`
     """
     jd_terms = {s.lower() for s in jd.required_skills + jd.preferred_skills + jd.keywords}
     jd_terms.add(jd.role_type)
+    excluded = set(exclude_roles or [])
 
     def _is_relevant(tags: list[str], bullets: list) -> bool:
         tag_set = {t.lower() for t in tags}
@@ -62,8 +68,10 @@ def _bank_to_yaml_snippet(bank: ExperienceBank, jd: ParsedJD) -> str:
         "projects": [],
     }
 
-    # Always include all experiences
+    # Always include all experiences (unless excluded)
     for exp in bank.experience:
+        if exp.id in excluded:
+            continue
         d = {
             "id": exp.id,
             "organization": exp.organization,
@@ -75,9 +83,12 @@ def _bank_to_yaml_snippet(bank: ExperienceBank, jd: ParsedJD) -> str:
         }
         filtered["experience"].append(d)
 
-    # Include relevant projects + anchor projects (anchor: true in bank)
+    # Include relevant projects + anchor projects (anchor: true in bank).
+    # Excluded ids are always dropped, even if anchored.
     anchor_ids = {p.id for p in bank.projects if p.anchor}
     for proj in bank.projects:
+        if proj.id in excluded:
+            continue
         if _is_relevant(proj.tags, proj.bullets) or proj.id in anchor_ids:
             d = {
                 "id": proj.id,
@@ -89,9 +100,11 @@ def _bank_to_yaml_snippet(bank: ExperienceBank, jd: ParsedJD) -> str:
             }
             filtered["projects"].append(d)
 
-    # If filtering was too aggressive, include all projects
+    # If filtering was too aggressive, include all non-excluded projects
     if not filtered["projects"]:
         for proj in bank.projects:
+            if proj.id in excluded:
+                continue
             d = {
                 "id": proj.id,
                 "name": proj.name,
@@ -139,7 +152,7 @@ def tailor_resume(
     enriched_context: "EnrichedContext | None" = None,
 ) -> TailoredResume:
     """Run the tailoring agent — returns a TailoredResume."""
-    bank_yaml = _bank_to_yaml_snippet(bank, jd)
+    bank_yaml = _bank_to_yaml_snippet(bank, jd, exclude_roles=settings.exclude_roles)
     jd_summary = _format_jd_summary(jd)
 
     user_prompt = build_tailor_user_prompt(
@@ -149,6 +162,8 @@ def tailor_resume(
         max_proj_bullets=settings.max_bullets_per_project,
         max_projects=settings.max_projects,
         enriched_context=enriched_context,
+        emphasize_roles=settings.emphasize_roles,
+        exclude_roles=settings.exclude_roles,
     )
 
     return client.complete(

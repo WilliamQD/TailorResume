@@ -1,4 +1,4 @@
-"""Post-AI hallucination validator for tailored resumes (synthesis mode)."""
+"""Post-AI hallucination + style validator for tailored resumes (synthesis mode)."""
 
 from __future__ import annotations
 
@@ -6,6 +6,41 @@ import re
 from dataclasses import dataclass, field
 
 from jobplanner.bank.schema import ExperienceBank, TailoredResume
+
+
+# ---------------------------------------------------------------------------
+# Style gates (ported from SankaiAI/ats-optimized-resume-agent-skill)
+# ---------------------------------------------------------------------------
+
+# Weak / overused language. Flagged as warnings (LLM may rewrite at critic
+# stage). The quantified exceptions ("improved performance by 20%") are
+# allowed via negative lookahead.
+BANNED_PHRASE_PATTERNS: tuple[str, ...] = (
+    r"\bresponsible for\b",
+    r"\bhelped (with|to)\b",
+    r"\bassisted (with|in)\b",
+    r"\bsupported\b.{0,30}\bteam\b",
+    r"\bpassionate (about|for)\b",
+    r"\bresults[- ]driven\b",
+    r"\bvisionary\b",
+    r"\bdynamic professional\b",
+    r"\bthrive[sd]? in\b",
+    r"\bfast[- ]paced environment\b",
+    r"\bimproved performance\b(?!\s+by)",
+    r"\benhanced efficiency\b(?!\s+by)",
+)
+
+# Placeholder sentinels. Any match is a hard error — the LLM left a hole.
+PLACEHOLDER_PATTERNS: tuple[str, ...] = (
+    r"\bTODO\b",
+    r"\bPLACEHOLDER\b",
+    r"\bXXX\b",
+    r"\bTBD\b",
+    r"\[\[",
+)
+
+_BANNED_RE = tuple(re.compile(p, re.IGNORECASE) for p in BANNED_PHRASE_PATTERNS)
+_PLACEHOLDER_RE = tuple(re.compile(p, re.IGNORECASE) for p in PLACEHOLDER_PATTERNS)
 
 
 @dataclass
@@ -42,6 +77,11 @@ def validate_tailored_resume(
     2. Bullet index validity -- every index in source_bullet_indices is in range
     3. Metric preservation -- numbers from source bullets appear in output
     4. Skill whitelist -- skills in output text should come from the bank
+
+    Style checks (Stage 1):
+    5. Banned phrases -- weak/overused language (warnings only)
+    6. Placeholder sentinels -- TODO/TBD/XXX etc. (errors)
+    7. Duplicate bullets -- same normalized text across all bullets (errors)
     """
     warnings: list[ValidationWarning] = []
     all_skills = bank.all_skill_names()
@@ -82,8 +122,71 @@ def validate_tailored_resume(
                 sel.source_id, i, all_skills, warnings,
             )
 
+    # Style gates run over every rendered bullet regardless of source
+    _check_style_gates(tailored, warnings)
+
     has_errors = any(w.severity == "error" for w in warnings)
     return ValidationResult(passed=not has_errors, warnings=warnings)
+
+
+def _check_style_gates(
+    tailored: TailoredResume,
+    warnings: list[ValidationWarning],
+) -> None:
+    """Scan every tailored bullet for banned phrases, placeholders, duplicates.
+
+    Banned phrases → warning. Placeholders and duplicates → error (they are
+    either LLM bugs or unambiguous leftovers that block shipping).
+    """
+    # (source_id, bullet_index, text) for every synthesized bullet
+    all_bullets: list[tuple[str, int, str]] = []
+    for sel in tailored.selected_experiences:
+        for i, tb in enumerate(sel.bullets):
+            all_bullets.append((sel.source_id, i, tb.text))
+    for sel in tailored.selected_projects:
+        for i, tb in enumerate(sel.bullets):
+            all_bullets.append((sel.source_id, i, tb.text))
+
+    # Banned phrases + placeholder sentinels per bullet
+    for source_id, idx, text in all_bullets:
+        for pat in _BANNED_RE:
+            m = pat.search(text)
+            if m:
+                warnings.append(ValidationWarning(
+                    severity="warning",
+                    source_id=source_id,
+                    bullet_index=idx,
+                    message=f"Banned phrase {m.group(0)!r} (pattern {pat.pattern!r})",
+                ))
+        for pat in _PLACEHOLDER_RE:
+            m = pat.search(text)
+            if m:
+                warnings.append(ValidationWarning(
+                    severity="error",
+                    source_id=source_id,
+                    bullet_index=idx,
+                    message=f"Placeholder sentinel {m.group(0)!r} left in bullet text",
+                ))
+
+    # Duplicate bullet detection — normalized lowercase + whitespace-collapsed.
+    seen: dict[str, tuple[str, int]] = {}
+    for source_id, idx, text in all_bullets:
+        key = re.sub(r"\s+", " ", text.strip().lower())
+        if not key:
+            continue
+        if key in seen:
+            first_src, first_idx = seen[key]
+            warnings.append(ValidationWarning(
+                severity="error",
+                source_id=source_id,
+                bullet_index=idx,
+                message=(
+                    f"Duplicate bullet (matches {first_src}[{first_idx}]): "
+                    f"{text[:60]!r}"
+                ),
+            ))
+        else:
+            seen[key] = (source_id, idx)
 
 
 def _check_synthesized_bullet(

@@ -1,0 +1,16 @@
+\section*{EDUCATION}
+<% for edu in education %>
+<% if edu.gpa %>
+\entryEdu{<< edu.institution >>}{<< edu.dates >>}{<< edu.degree >>}{}{GPA: << edu.gpa >>}
+<% else %>
+\entry{<< edu.institution >>}{<< edu.dates >>}{<< edu.degree >>}{}
+<% endif %>
+<% if edu.honors %>
+{\small\RaggedRight << edu.honors | join(', ') >>\par}
+<% endif %>
+<% if edu.coursework %>
+{\small\RaggedRight \textit{Relevant Coursework:} << edu.coursework | join(', ') >>\par}
+<% endif %>
+<% if not loop.last %>\vspace{0.15em}
+<% endif %>
+<% endfor %>

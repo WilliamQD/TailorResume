@@ -121,6 +121,47 @@ intentionally **not** synced — it's regenerable per-machine.
 - Streamlit uses BaseWeb components — dropdown/popover/tab selectors require `[data-baseweb="..."]` overrides
 - All colors must reference `--bg-*`/`--text-*`/`--accent-*` CSS variables for consistency
 - No Streamlit `icon=` parameters — Streamlit rejects Unicode symbols (e.g. `\u2713`), only accepts emoji
+- **CSS label invariant**: form-widget labels are styled by a SINGLE global rule at the top of the `<style>` block (`.stSelectbox label, .stMultiSelect label, .stRadio > label, ...`). Do NOT scope label color rules only to the sidebar — this bug recurred multiple times when new widgets were added to the main tab without matching sidebar-scoped CSS. Add any new Streamlit widget class to that global rule.
+- **Streamlit layout invariant**: Streamlit's native layout uses `position: absolute; inset: 0; overflow: hidden` on `.stApp`/`stAppViewContainer` and `height: 100dvh; overflow: auto` on `stMain` (the scroll container). The sidebar stretches via flex. Do NOT override `position`, `overflow`, or `height` on these containers — doing so breaks scroll containment and causes the sidebar and backgrounds to stop at the viewport boundary while content overflows, producing the "white background at the bottom" bug. Only override `background-color` and cosmetic styles on Streamlit containers. The PDF preview is embedded as base64 inside the same `st.markdown` call as its wrapper div; splitting across separate `st.markdown` calls breaks the div wrapping.
+- **Textarea white-leak invariant**: Streamlit nests `.stTextArea > stTextAreaRootElement[data-baseweb=textarea] > div[data-baseweb=base-input] > <textarea>`. All three wrapper layers ship with `rgb(240,242,246)` default. The `.stTextArea textarea` rule only hits the innermost element — the `base-input` wrapper leaks light through as a ~1138×218 white rectangle. Both `[data-baseweb="textarea"]` AND `[data-baseweb="base-input"]` must be overridden to `var(--bg-card)`. Regression-gated by `tests/test_app_visual.py::test_no_large_white_elements`.
+- **PDF-preview crop**: `render_pdf_preview()` in [app.py](src/jobplanner/app.py) passes a `clip` argument to `page.get_pixmap()`, computed from the union of `page.get_text("blocks")` bboxes plus a ~0.33" cosmetic margin. This keeps the preview image tight around the resume content instead of rendering the full US Letter page with a blank white bottom strip. Regression-gated by `tests/test_app_pdf_preview.py::test_preview_aspect_ratio` and `::test_preview_bottom_whitespace_is_bounded`.
+
+## UI Verification Workflow
+Visual/CSS regressions (white-on-dark, invisible labels, scroll lock) don't crash
+the app, so they slip past in-memory tests. There are two complementary gates:
+
+**1. In-memory smoke test** — [tests/test_app_smoke.py](tests/test_app_smoke.py)
+Uses `streamlit.testing.v1.AppTest` to run the app in-process with the UI
+fixture injected. Catches crashes, missing widgets, `st.error` calls, and
+broken session-state wiring. Runs on every `pytest` — ~25s, zero cost.
+
+**2. Visual snapshot test** — [tests/test_app_visual.py](tests/test_app_visual.py)
+Launches a real `streamlit run` subprocess + headless Chromium via Playwright,
+takes a full-page screenshot to `.jp_ui_screenshot/app.png`, and runs DOM-level
+color invariants: no element >200×200 px with an opaque white background,
+`.stApp` dark, status widget dark, section headers visible. This is the gate
+that catches the recurring "white rectangle" bug. Runs on every `pytest` — ~15s.
+
+**Fixture** — [tests/fixtures/ui_fixture.py](tests/fixtures/ui_fixture.py)
+`build_ui_fixture(path)` synthesizes a full `PipelineResult` (TailoredResume →
+real LaTeX render → real tectonic compile → real ATS check → real orphan
+detection) from `data/experience.example.yaml` with **zero LLM calls**, so
+CI costs nothing. When `JOBPLANNER_UI_FIXTURE=1` is set, `app.py` loads this
+fixture into `session_state["result"]` on first run, so developers can also
+eyeball the fixture state in a real browser:
+```bash
+JOBPLANNER_UI_FIXTURE=1 streamlit run src/jobplanner/app.py
+```
+**After every UI change** (CSS, layout, new widgets), run both tests before
+shipping. If the fixture's TailoredResume references drift from
+`experience.example.yaml` ids, the fixture builder raises — fix the fixture,
+don't skip the test.
+
+Setup (one-time, for contributors running the visual test):
+```bash
+pip install playwright
+python -m playwright install chromium
+```
 
 ## Bank Suggestions
 - Bank improvement suggestions are persisted in SQLite (`data/market/skill_tracker.db`) alongside market data
@@ -134,8 +175,11 @@ intentionally **not** synced — it's regenerable per-machine.
 - Safety-net dedup in renderer catches anything the LLM misses
 
 ## Page Fill
-- Target: 90% fill ratio (progressive escalation over 3 retries)
+- Target: 93% fill ratio (progressive escalation over 3 retries)
 - Retry 1: bump project bullets to 3; Retry 2: bump experience bullets to 4; Retry 3: allow a 3rd project
+- Anchor projects (`anchor: true` in experience.yaml) always get 3 bullets — enforced in the tailor prompt, not a config field. Non-anchor projects get the default `max_bullets_per_project` cap (2).
+- Bottom page margin is 0.4in (tightened from 0.5in) to eat more bottom whitespace.
+- No user-facing page-target or tone controls — the pipeline is always strict one-page, and the prompt bakes in a single HR-friendly plain-English voice.
 
 ## Conventions
 - Pydantic v2 for all data models
@@ -143,4 +187,7 @@ intentionally **not** synced — it's regenerable per-machine.
 - Jinja2 custom delimiters (`<< >>`, `<% %>`) for LaTeX templates
 - All AI calls go through `llm/base.py` LLMClient protocol
 - Every tailored bullet must cite its source via `source_id` + `source_bullet_indices`
-- Audience-aware tailoring: bullets are framed differently depending on the JD's discipline
+- Audience-aware tailoring: bullets are framed differently depending on the JD's discipline — but the voice is ALWAYS plain HR-friendly English, never discipline jargon piled into clusters
+- **Line-fill rule** (measured, not guessed): every bullet either fits one printed line (≤ 105 chars) or fills two (≥ 185 chars). Forbidden zone 106-184 is rejected because it wraps with dangling 2-5-word tails. Enforced in the tailor system prompt, critic Pass 3, AND the LaTeX preamble.
+- **LaTeX orphan-wrap invariants**: `data/templates/resume.tex.j2` loads `ragged2e` and `microtype` with `protrusion=true,final`, then sets `\tolerance=2000`, `\emergencystretch=3em`, `\hyphenpenalty=1000`, `\exhyphenpenalty=1000`. Bulleted lists use `before=\RaggedRight` via enumitem. The skills (`sections/skills.tex.j2`) and coursework (`sections/education.tex.j2`) blocks wrap their `{\small ...}` body in `\RaggedRight`. **Never remove any of these** — they prevent single-word orphan lines on line 2 of wrapped bullets, a bug that recurred multiple times before this defense was added. **Do NOT add `expansion=true` to the microtype options** — it's incompatible with XeTeX (which tectonic uses) and fails compilation. After compile, `detect_orphan_lines()` in `latex/compiler.py` scans the rendered PDF for remaining orphans and surfaces them as warnings in `PipelineResult.orphan_warnings`, visible as a yellow banner in the Streamlit results column and persisted to `report.json`.
+- **Skills-line cap**: maximum 7 skills per line AND the full rendered line (label + joined skills) must be ≤ 110 characters. Enforced in the tailor prompt's `# SKILLS SECTION — CRITICAL` block. An 8-skill line at ~130 chars always wraps with 1-2 orphan words.

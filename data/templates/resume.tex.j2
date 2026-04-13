@@ -1,13 +1,29 @@
 \documentclass[10pt]{article}
-\usepackage[letterpaper,top=0.5in,bottom=0.5in,left=0.6in,right=0.6in]{geometry}
+\usepackage[letterpaper,top=0.5in,bottom=0.4in,left=0.6in,right=0.6in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-\usepackage{microtype}
+% protrusion=true works with tectonic (XeTeX); expansion=true does not.
+\usepackage[protrusion=true,final]{microtype}
+\usepackage{ragged2e}
 \usepackage{enumitem}
 \usepackage{tabularx}
 \usepackage{titlesec}
 \usepackage[hidelinks]{hyperref}
+
+% ---- Orphan-line defense ----
+% Default \tolerance=200 and \emergencystretch=0pt force the line-breaker to
+% pick "early break + short wrap" over "stretch previous line a bit", which
+% produces single-word orphan lines on line 2. We raise tolerance and grant
+% 3em of emergency slack so 1-3 words of overflow absorb into the previous
+% line instead of orphaning. Combined with ragged2e's \RaggedRight inside
+% itemize and the skills/coursework blocks, this eliminates orphans without
+% sacrificing readability. Never remove these — see CLAUDE.md.
+\tolerance=2000
+\emergencystretch=3em
+\hyphenpenalty=1000
+\exhyphenpenalty=1000
+\hbadness=10000
 
 \pagestyle{empty}
 \setlength{\parindent}{0pt}
@@ -19,7 +35,12 @@
 \titleformat{\section}{\bfseries\large}{}{0pt}{}[\vspace{0.15em}\hrule]
 \titlespacing*{\section}{0pt}{<< section_space_before >>}{<< section_space_after >>}
 
-% List formatting
+% List formatting — bullets are JUSTIFIED (not ragged) so that
+% \emergencystretch=3em above can stretch inter-word space on the previous
+% line to absorb 1-3 words of overflow instead of orphaning them on line 2.
+% Ragged itemize text defeats emergencystretch (ragged uses fixed spacing),
+% so we keep bullets justified here and only use \RaggedRight on the skills
+% and coursework paragraphs (which are capped structurally instead).
 \setlist[itemize]{leftmargin=1.15em,topsep=<< item_topsep >>,itemsep=<< item_itemsep >>,parsep=0em}
 
 \newcommand{\resumeHeader}[4]{%
@@ -49,59 +70,8 @@
   {\href{<< meta.linkedin >>}{LinkedIn}}
   {\href{<< meta.github >>}{GitHub}}
 
-\section*{EDUCATION}
-<% for edu in education %>
-<% if edu.gpa %>
-\entryEdu{<< edu.institution >>}{<< edu.dates >>}{<< edu.degree >>}{}{GPA: << edu.gpa >>}
-<% else %>
-\entry{<< edu.institution >>}{<< edu.dates >>}{<< edu.degree >>}{}
-<% endif %>
-<% if edu.honors %>
-{\small << edu.honors | join(', ') >>}\par
-<% endif %>
-<% if edu.coursework %>
-{\small \textit{Relevant Coursework:} << edu.coursework | join(', ') >>}\par
-<% endif %>
-<% if not loop.last %>\vspace{0.15em}
-<% endif %>
+<% for section in section_order %>
+<% include 'sections/' + section + '.tex.j2' %>
 <% endfor %>
-
-\section*{SKILLS}
-{\small
-\textbf{<< skills.line1_label >>:} << skills.line1 | join(', ') >>\par
-\textbf{<< skills.line2_label >>:} << skills.line2 | join(', ') >>\par
-<% if skills.line3 %>
-\textbf{<< skills.line3_label >>:} << skills.line3 | join(', ') >>\par
-<% endif %>
-}
-
-\section*{PROFESSIONAL EXPERIENCE}
-<% for exp in experiences %>
-\textbf{<< exp.organization >>}\hfill \textbf{<< exp.location >>}\par
-\textit{<< exp.role >>}\hfill \textit{<< exp.dates >>}\par
-\begin{itemize}
-<% for bullet in exp.bullets %>
-  \item << bullet >>
-<% endfor %>
-\end{itemize}
-<% if not loop.last %>\vspace{0.15em}
-<% endif %>
-<% endfor %>
-
-<% if projects %>
-\section*{PROJECTS \& EXTRACURRICULARS}
-<% for proj in projects %>
-\textbf{<< proj.name >>}<% if proj.url %>~{\small(\href{<< proj.url >>}{Site})}<% endif %>\hfill \textit{<< proj.dates >>}\par
-<% if proj.subtitle %>\textit{<< proj.subtitle >>}\par
-<% endif %>
-\begin{itemize}
-<% for bullet in proj.bullets %>
-  \item << bullet >>
-<% endfor %>
-\end{itemize}
-<% if not loop.last %>\vspace{0.15em}
-<% endif %>
-<% endfor %>
-<% endif %>
 
 \end{document}

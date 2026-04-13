@@ -35,8 +35,11 @@ The resume MUST fill an entire 1-page PDF with NO significant whitespace at
 the bottom. This means you need ENOUGH content:
 - Select ALL experiences (typically 3) and 2-3 projects.
 - Use the MAXIMUM allowed bullets per experience and project.
-- Write concise, dense bullets (~130-160 chars each, about 1-1.5 printed lines).
-- Prefer 3 bullets per experience and 2 per project.
+- Write concise, dense bullets that either fit tightly on one printed line
+  (≤ 105 chars) or fill two printed lines (≥ 185 chars). See the LINE-FILL
+  RULE below — NEVER leave 2-5 orphan words on a wrap line.
+- Prefer 3 bullets per experience. Non-anchor projects get 2 bullets;
+  ANCHOR projects (anchor: true in the bank) ALWAYS get 3.
 - A half-empty page is a FAILURE. Always err on the side of more content.
 
 # SYNTHESIS MODE — HOW TO WRITE BULLETS
@@ -54,47 +57,71 @@ millions of EHR rows" and the JD is for a data engineering role, emphasize the
 scale and engineering. If the same JD is for a biostatistics role, emphasize
 the clinical data and analysis readiness.
 
-# AUDIENCE-AWARE TAILORING — CRITICAL
+# CLARITY FOR HUMAN REVIEWERS — NON-NEGOTIABLE
 
-Describe experiences differently depending on the JD's discipline and audience:
+Recruiters and HR reviewers spend ~7 seconds on a resume. Every bullet MUST
+be understandable on a single pass by a smart non-specialist. Technical
+expertise is demonstrated through OUTCOMES, not by stacking jargon. Apply
+these rules to EVERY bullet you write:
 
-**For Data Science / Statistics roles:**
-- Emphasize statistical rigor, methodology, experimental design, metrics
-- Minimize engineering jargon (don't lead with "Docker", "K8s", "CI/CD")
-- Use terms like "analysis", "modeling", "experimental workflow", "data pipeline"
-- A biostatistician reading your resume understands "GEE" without explanation
+- Use simple, concrete verbs: built, wrote, shipped, cut, saved, automated,
+  sped up, replaced, tested, analyzed, designed, reduced, added, launched.
+  AVOID these weak/pretentious verbs: authored, spearheaded, orchestrated,
+  leveraged, engineered (unless the person is literally an engineer doing
+  engineering), facilitated, enabled.
+- NO JARGON CLUSTERS. If a bullet stacks 3+ technical modifiers to describe
+  one thing (e.g. "null-rate, distribution, and temporal-consistency tests"),
+  REWRITE IT using the plain-English category the reviewer already knows
+  ("data-quality checks", "validation tests", "sanity checks"). The reader
+  should not need to parse a compound noun.
+- Every bullet must pass the "what and why" test in plain English:
+  WHAT did you do? WHY does it matter to THIS specific business?
+- Replace domain shorthand with the outcome it produced. Bad: "Implemented
+  Pydantic schema checks to tighten retrieval precision". Better: "Added
+  input validation that caught bad queries before they hit the model".
+- If you cannot explain a bullet out loud to a smart non-technical friend
+  in ONE breath, it is not resume-ready. Simplify.
+- Prefer ordinary English words over fancy synonyms. "Used" beats
+  "leveraged". "Ran" beats "orchestrated". "Wrote" beats "authored".
 
-**For Software Engineering roles:**
-- Emphasize architecture, scale, tooling, CI/CD, production deployment
-- Lead with tech stack and engineering decisions
-- Minimize statistical jargon
+# AUDIENCE-AWARE FRAMING (secondary to clarity)
 
-**For ML Engineering roles:**
-- Balance both — model training, infrastructure, deployment, monitoring
-- Emphasize MLOps, experiment tracking, automation
+Tailor the ANGLE of each bullet to the discipline the JD hires for, but
+NEVER at the cost of plain language. Framing changes what you lead with —
+not how dense your jargon gets.
 
-**For Finance / Analyst roles:**
-- Emphasize domain knowledge, financial metrics, business impact
-- Lead with the business problem, not the tech stack
+- Data Science / Statistics: lead with the decision or insight the analysis
+  enabled. Mention method only when a statistician would care.
+- Software Engineering: lead with the user or system outcome (faster, more
+  reliable, cheaper, safer), not the framework. Tech stack goes at the end
+  of the bullet, not the start.
+- ML Engineering: lead with what the model does in production. MLOps detail
+  only when it changed latency, cost, or reliability.
+- Finance / Analyst: lead with the business metric or decision, then the
+  analysis that drove it.
 
 **General rules:**
-- When a project is NOT directly relevant but included for currency/breadth,
-  keep the bullet high-level and focus on transferable skills
-- Don't use jargon from a different discipline that makes you look unfocused
-- What NOT to say matters as much as what to say
+- When a project is included for breadth rather than tight JD match, keep
+  the bullet high-level and focus on transferable outcomes.
+- Don't use jargon from a different discipline — it makes you look unfocused.
+- What NOT to say matters as much as what to say.
 
 # SELECTION STRATEGY
 
 - Include ALL experiences unless one is truly irrelevant to the role.
 - Select exactly 2 projects most relevant to this JD.
 - For each experience, select the maximum allowed bullets.
-  For each project, the maximum allowed bullets.
+  For each NON-anchor project, the maximum allowed bullets.
+- **ANCHOR projects (anchor: true in the bank) MUST get exactly 3 bullets
+  — always 3, even if the per-project cap below says 2.** They are the
+  strongest showcase pieces and deserve the extra real estate. This
+  overrides the `max_proj_bullets` constraint for anchor projects only.
 - Prioritize entries whose skills overlap with the JD's required_skills.
 - Within each experience, order bullets by relevance to the JD (most
   relevant first).
-- ALWAYS include anchor projects (those marked with anchor: true in the bank)
-  even if tags don't perfectly match — they show active coding, modern tech,
-  and breadth. Adapt HOW you describe them to the audience.
+- ALWAYS include anchor projects even if tags don't perfectly match — they
+  show active coding, modern tech, and breadth. Adapt HOW you describe
+  them to the audience.
 
 # SKILLS SECTION — CRITICAL
 
@@ -109,19 +136,54 @@ technical tools. Follow these rules:
   skills section for keyword matching, but NEVER as fabricated experience bullets.
 - Use skill names exactly as they appear in the bank's skills section,
   bullet tags, or inferred_skills names.
-- MAXIMUM 8 skills per line. Be selective — quality over quantity.
+- MAXIMUM 7 skills per line AND the full rendered line (label + skills,
+  joined by ", ") must be ≤ 110 characters. COUNT the characters. An
+  8-skill line at ~130 chars wraps with 1-2 orphan words on line 2 and
+  looks broken — fewer strong keywords beats a dense list that wraps.
 - Order: most JD-relevant skills first within each line.
 
 # REWRITING GUIDELINES — KEYWORD ALIGNMENT
 
-- Start each bullet with a strong action verb.
+- Start each bullet with a strong, PLAIN action verb (see the verb list in
+  the clarity section above).
 - ACTIVELY weave JD keywords into bullet text where they truthfully apply.
 - Frame the applicant's work in terms the JD uses.
-- Keep bullets concise: ~130-160 characters each (about 1-1.5 printed lines).
-  Dense, impactful single-line bullets beat verbose multi-line paragraphs.
 - Quantify impact where the source provides metrics.
 - Do NOT add filler phrases like "Leveraged cutting-edge" or
   "Spearheaded innovative". Be concrete and specific.
+
+# LINE-FILL RULE — NON-NEGOTIABLE (measured, not guessed)
+
+Every bullet must EITHER fit on ONE printed line OR fill TWO full printed
+lines. NEVER write a bullet that wraps with only 2-5 short words on line 2
+— that wastes half a line of page space and looks sloppy.
+
+The numbers below are MEASURED against the actual template (10pt Latin
+Modern, 7.3in text width, 1.15em itemize indent):
+
+- ONE-LINE bullet: ≤ 105 characters (incl. spaces and punctuation).
+  Safe zone: ~85-105 chars.
+- TWO-LINE bullet: ≥ 185 characters. Must carry enough content to push
+  well past the line-2 left margin.
+  Safe zone: ~185-210 chars.
+- FORBIDDEN ZONE: 106-184 characters. Bullets in this range WILL wrap
+  with a short dangling tail on line 2.
+
+If a draft lands in the forbidden zone, you have two options:
+  (a) TRIM it to ≤ 105 characters by cutting filler or shortening verbs.
+  (b) EXTEND it to ≥ 185 characters by adding ONE concrete detail — a
+      metric, a scope indicator, a named tool, or the user/business
+      outcome. NEVER pad with vague words.
+
+Examples of dangling-tail bullets to AVOID:
+  ✗ "... cut clinical data delivery turnaround from months to weeks."
+    (if "weeks." ends up alone on line 2)
+  ✗ "... and helped new analysts ramp up faster."
+    (if "faster." ends up alone on line 2 — exactly what happened in a
+    prior run at 117 chars, inside the forbidden zone)
+
+Apply this rule BEFORE you finalize output. Count characters mentally —
+don't eyeball them. Err toward ≤ 105 or ≥ 190.
 
 # COURSEWORK SELECTION
 
@@ -153,6 +215,8 @@ def build_tailor_user_prompt(
     max_proj_bullets: int = 2,
     max_projects: int = 2,
     enriched_context: "EnrichedContext | None" = None,
+    emphasize_roles: list[str] | None = None,
+    exclude_roles: list[str] | None = None,
 ) -> str:
     """Build the user message for the tailoring call."""
     # Build optional enrichment block
@@ -181,6 +245,26 @@ def build_tailor_user_prompt(
                 + "\n"
             )
 
+    role_pref_block = ""
+    emphasize = emphasize_roles or []
+    exclude = exclude_roles or []
+    if emphasize or exclude:
+        lines = ["\n## Role Preferences\n"]
+        if emphasize:
+            lines.append(
+                "The user wants the following source_ids to be prioritized when "
+                "selecting experiences/projects for this JD (soft boost — only "
+                "include them if they are relevant):"
+            )
+            lines.append("".join(f"\n- {sid}" for sid in emphasize))
+        if exclude:
+            lines.append(
+                "\n\nThe following source_ids have been HARD-EXCLUDED by the user "
+                "and are not present in the bank below. Do not invent them:"
+            )
+            lines.append("".join(f"\n- {sid}" for sid in exclude))
+        role_pref_block = "\n".join(lines) + "\n"
+
     return f"""\
 ## Job Description Summary
 
@@ -191,20 +275,24 @@ def build_tailor_user_prompt(
 ```yaml
 {bank_yaml}
 ```
-{enrichment_block}
+{enrichment_block}{role_pref_block}
 ## Constraints
 
 - Maximum {max_exp_bullets} bullets per experience
-- Maximum {max_proj_bullets} bullets per project
-- The final resume MUST fill a full one-page PDF. Use the maximum number of
-  bullets allowed. A half-empty page is unacceptable.
+- Maximum {max_proj_bullets} bullets per NON-anchor project
+- Anchor projects (anchor: true): ALWAYS 3 bullets (overrides the cap above)
+- The final resume MUST fill a full one-page PDF. A half-empty page is unacceptable.
 - Every bullet must cite source_id + source_bullet_indices (list of ints).
 - SYNTHESIZE bullets from the factual descriptions — do NOT just rephrase.
   Emphasize the aspects most relevant to this specific JD.
 - Tailor the skills section labels and ordering to match what this JD values.
 - Inferred skills may appear in the skills section lines for keyword matching.
+- Obey the LINE-FILL RULE: every bullet either fits one line (≤ 105 chars)
+  or fills two lines (≥ 185 chars). Forbidden zone 106-184 — NEVER.
+- Use plain HR-friendly English: simple verbs, no jargon clusters, no
+  "authored / spearheaded / orchestrated / leveraged".
 
 Select ALL relevant experiences and exactly {max_projects} projects. Use the maximum bullets
-per entry. Synthesize bullets to align with this job description. Return the
+per entry (3 for anchor projects). Synthesize bullets to align with this job description. Return the
 TailoredResume JSON.
 """

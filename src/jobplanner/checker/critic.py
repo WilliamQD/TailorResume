@@ -29,13 +29,60 @@ ABSOLUTE RULES:
 6. You may adjust skill section labels and skill ordering.
 7. You may trim coursework to only the most relevant courses.
 
-QUALITY CRITERIA — evaluate every bullet:
+QUALITY CRITERIA — evaluate every bullet in two passes.
+
+## Pass 1: Impact & alignment
 1. IMPACT-FIRST: Does the bullet lead with the result/outcome, not the task performed?
 2. SPECIFICITY: Are there concrete numbers, tools, or scale indicators?
 3. ACTION VERB: Does it start with a strong verb (Built, Designed, Reduced) not a weak one (Helped, Worked on)?
 4. JD ALIGNMENT: Does the language mirror the JD's vocabulary and priorities?
-5. NO FLUFF: Zero filler phrases ("leveraged cutting-edge", "spearheaded innovative")?
-6. LENGTH: Is it ~130–160 characters? Too short wastes space. Too long wraps awkwardly.
+5. LENGTH: Is it ~130–160 characters? Too short wastes space. Too long wraps awkwardly.
+
+## Pass 2: Humanization (do this AFTER pass 1, on the rewritten bullets)
+6. NO BUZZWORDS / FLUFF: strip filler phrases. Reject specifically:
+   "leveraged cutting-edge", "spearheaded innovative", "synergize",
+   "passionate about", "results-driven", "fast-paced environment",
+   "dynamic professional", "visionary", "responsible for", "helped with",
+   "assisted in", "thrives in", "improved performance" (unquantified).
+7. NO REPEATED SYNTAX: across any 3+ consecutive bullets within a single
+   experience or project, the opening verb AND sentence shape must vary.
+   Reject "Built X that... Built Y that... Built Z that..." patterns —
+   reshape at least one of them.
+8. HUMAN VOICE: sounds like a real engineer wrote it, not a template.
+   No generic AI patterns. No sentences that could apply to any candidate.
+
+## Pass 3: Plain-language rewrite (MANDATORY for EVERY bullet)
+9. Read each bullet in your head as if you were a non-technical recruiter
+   with 7 seconds per resume. If you would not grasp it on a single pass,
+   REWRITE it in plain English.
+10. Reject JARGON CLUSTERS — 3+ technical modifiers stacked on one noun.
+    Example to fix:
+      BAD: "Authored automated null-rate, distribution, and temporal-
+            consistency tests plus documentation"
+      GOOD: "Wrote automated data-quality checks and documentation that
+             cut new-hire onboarding from weeks to days"
+    Replace the cluster with the plain-English category the reviewer
+    already knows ("data-quality checks", "validation tests").
+11. Reject these weak/pretentious verbs and replace them with simple ones:
+      authored   → wrote
+      spearheaded→ led
+      orchestrated → ran / built / coordinated
+      leveraged  → used
+      engineered → built / designed (unless literally an engineer)
+      facilitated→ ran / led
+      enabled    → let / helped
+12. Enforce the LINE-FILL RULE (MEASURED against this template):
+    each bullet must EITHER be ≤ 105 chars (one printed line) OR ≥ 185
+    chars (two full printed lines). NOTHING in the 106-184 forbidden zone
+    — those wrap with 2-5 orphan words on line 2 and waste page space.
+    If a bullet is in the forbidden zone, either TRIM it to ≤ 105 chars
+    or EXTEND it to ≥ 185 chars by adding ONE concrete detail (metric,
+    tool, scope, outcome). Never pad with vague words. A 117-char bullet
+    ("...and helped new analysts ramp up faster.") is a real failure from
+    a prior run — "faster." orphaned on line 2. Count characters.
+13. "What and why" test: every bullet must answer WHAT you did and WHY it
+    mattered to the business — in plain words. If you cannot say why it
+    mattered, cut the bullet or flag the bank entry as thin.
 
 BANK FEEDBACK — for bullets that are weak because the SOURCE is thin:
 Flag them as BankSuggestion entries. Don't try to fix what you don't have data for —

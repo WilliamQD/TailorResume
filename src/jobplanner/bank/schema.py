@@ -68,6 +68,9 @@ class Skills(BaseModel):
     tools: list[str] = Field(default_factory=list)
 
 
+CandidateLevel = Literal["new_grad", "entry_level", "mid_level", "senior_ic"]
+
+
 class Meta(BaseModel):
     name: str
     email: str = ""
@@ -76,6 +79,10 @@ class Meta(BaseModel):
     github: str = ""
     location: str = ""
     website: str = ""
+    candidate_level: CandidateLevel = Field(
+        default="new_grad",
+        description="Drives section order on the rendered resume",
+    )
 
 
 # ---------------------------------------------------------------------------

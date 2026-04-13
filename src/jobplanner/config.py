@@ -88,6 +88,18 @@ class Settings(BaseModel):
     max_total_bullets: int = 16
     max_retries_for_one_page: int = 8
 
+    # Per-run tailoring controls. Tone and page-target are no longer
+    # user-configurable — the pipeline is always strict one-page, and the
+    # tailor prompt enforces a single HR-friendly plain-language voice.
+    exclude_roles: list[str] = Field(
+        default_factory=list,
+        description="source_ids to hard-exclude from the tailor prompt",
+    )
+    emphasize_roles: list[str] = Field(
+        default_factory=list,
+        description="source_ids to soft-boost in the tailor prompt",
+    )
+
     latex_compiler: str = "tectonic"
 
     @model_validator(mode="after")

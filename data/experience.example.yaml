@@ -16,6 +16,12 @@ meta:
   github: "https://github.com/janedoe"
   location: "San Francisco, CA"
   website: ""
+  # Drives section order on the rendered resume. One of:
+  #   new_grad     → education, skills, experience, projects
+  #   entry_level  → experience, skills, education, projects
+  #   mid_level    → skills, experience, projects, education
+  #   senior_ic    → skills, experience, projects, education
+  candidate_level: "new_grad"
 
 # ---------------------------------------------------------------------------
 education:

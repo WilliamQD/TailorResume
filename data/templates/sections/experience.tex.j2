@@ -1,0 +1,12 @@
+\section*{PROFESSIONAL EXPERIENCE}
+<% for exp in experiences %>
+\textbf{<< exp.organization >>}\hfill \textbf{<< exp.location >>}\par
+\textit{<< exp.role >>}\hfill \textit{<< exp.dates >>}\par
+\begin{itemize}
+<% for bullet in exp.bullets %>
+  \item << bullet >>
+<% endfor %>
+\end{itemize}
+<% if not loop.last %>\vspace{0.15em}
+<% endif %>
+<% endfor %>

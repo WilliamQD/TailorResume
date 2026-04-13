@@ -20,7 +20,12 @@ from jobplanner.checker.ats import ATSReport, check_ats
 from jobplanner.checker.proofreader import ProofreadResult, proofread
 from jobplanner.checker.critic import CriticResult, run_critic
 from jobplanner.config import Settings
-from jobplanner.latex.compiler import compile_latex, get_page_count, get_page_fill_ratio
+from jobplanner.latex.compiler import (
+    compile_latex,
+    detect_orphan_lines,
+    get_page_count,
+    get_page_fill_ratio,
+)
 from jobplanner.latex.renderer import SPACING_PRESETS, render_latex
 from jobplanner.llm import create_client
 from jobplanner.llm.base import LLMClient
@@ -43,6 +48,7 @@ class PipelineResult:
     ats_report: ATSReport | None = None
     proofread_result: ProofreadResult | None = None
     output_dir: Path | None = None
+    orphan_warnings: list[str] = field(default_factory=list)
 
 
 def _trim_content(tailored: TailoredResume) -> str:
@@ -228,15 +234,16 @@ def run_pipeline(
         except Exception as exc:
             _emit(f"  -> Suggestion persistence skipped: {exc}")
 
-    # --- Stage 7+8: Render LaTeX + Compile PDF (with retry loop) ---
+    # --- Stage 7+8: Render LaTeX + Compile PDF ---
+    # The pipeline is ALWAYS strict one-page. No user-facing page-target toggle.
     out_dir = _make_output_dir(settings, result.jd)
     result.output_dir = out_dir
     file_stem = _resume_filename(bank, result.jd)
-    min_fill_ratio = 0.90  # page must be at least 90% full
+    min_fill_ratio = 0.93  # page must be at least 93% full (tight enough to eat bottom whitespace)
 
+    pdf_path = None
     underfull_attempts = 0
     max_underfull_retries = 3
-    pdf_path = None
     max_attempts = settings.max_retries_for_one_page
 
     for attempt in range(max_attempts):
@@ -302,6 +309,24 @@ def run_pipeline(
         if pdf_path:
             _emit("  Could not fit resume to 1 page after all retries.")
             result.pdf_path = pdf_path
+
+    # --- Orphan-line verification ---
+    # Post-render safety net: the LaTeX preamble defense (ragged2e +
+    # \emergencystretch) should eliminate orphans, but we verify by scanning
+    # the rendered PDF and emitting warnings for anything that slipped through.
+    if result.pdf_path and result.pdf_path.exists():
+        try:
+            orphans = detect_orphan_lines(result.pdf_path)
+        except Exception as exc:
+            _emit(f"  Orphan detection skipped: {exc}")
+            orphans = []
+        if orphans:
+            _emit(f"  [!] {len(orphans)} orphan wrap(s) detected:")
+            for o in orphans:
+                _emit(f"      - {o}")
+            result.orphan_warnings = orphans
+        else:
+            _emit("  -> No orphan wraps detected.")
 
     # --- Stage 9: ATS check + proofread ---
     if result.pdf_path and result.pdf_path.exists():
@@ -370,6 +395,7 @@ def run_pipeline(
                                      + enriched.structure_template) // 4,
             "market_boosted_skills": enriched.market_boost_skills,
             "critic_summary": result.critic_result.summary if result.critic_result else None,
+            "orphan_warnings": result.orphan_warnings,
         }
         report_path = out_dir / "report.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
