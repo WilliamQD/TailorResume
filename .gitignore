@@ -36,3 +36,6 @@ data/market/
 
 # Reference screenshots — keep on disk but don't track
 data/examples/*.png
+
+# Test-generated UI screenshots
+.jp_ui_screenshot/

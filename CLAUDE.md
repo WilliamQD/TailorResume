@@ -121,46 +121,22 @@ intentionally **not** synced — it's regenerable per-machine.
 - Streamlit uses BaseWeb components — dropdown/popover/tab selectors require `[data-baseweb="..."]` overrides
 - All colors must reference `--bg-*`/`--text-*`/`--accent-*` CSS variables for consistency
 - No Streamlit `icon=` parameters — Streamlit rejects Unicode symbols (e.g. `\u2713`), only accepts emoji
-- **CSS label invariant**: form-widget labels are styled by a SINGLE global rule at the top of the `<style>` block (`.stSelectbox label, .stMultiSelect label, .stRadio > label, ...`). Do NOT scope label color rules only to the sidebar — this bug recurred multiple times when new widgets were added to the main tab without matching sidebar-scoped CSS. Add any new Streamlit widget class to that global rule.
-- **Streamlit layout invariant**: Streamlit's native layout uses `position: absolute; inset: 0; overflow: hidden` on `.stApp`/`stAppViewContainer` and `height: 100dvh; overflow: auto` on `stMain` (the scroll container). The sidebar stretches via flex. Do NOT override `position`, `overflow`, or `height` on these containers — doing so breaks scroll containment and causes the sidebar and backgrounds to stop at the viewport boundary while content overflows, producing the "white background at the bottom" bug. Only override `background-color` and cosmetic styles on Streamlit containers. The PDF preview is embedded as base64 inside the same `st.markdown` call as its wrapper div; splitting across separate `st.markdown` calls breaks the div wrapping.
-- **Textarea white-leak invariant**: Streamlit nests `.stTextArea > stTextAreaRootElement[data-baseweb=textarea] > div[data-baseweb=base-input] > <textarea>`. All three wrapper layers ship with `rgb(240,242,246)` default. The `.stTextArea textarea` rule only hits the innermost element — the `base-input` wrapper leaks light through as a ~1138×218 white rectangle. Both `[data-baseweb="textarea"]` AND `[data-baseweb="base-input"]` must be overridden to `var(--bg-card)`. Regression-gated by `tests/test_app_visual.py::test_no_large_white_elements`.
-- **PDF-preview crop**: `render_pdf_preview()` in [app.py](src/jobplanner/app.py) passes a `clip` argument to `page.get_pixmap()`, computed from the union of `page.get_text("blocks")` bboxes plus a ~0.33" cosmetic margin. This keeps the preview image tight around the resume content instead of rendering the full US Letter page with a blank white bottom strip. Regression-gated by `tests/test_app_pdf_preview.py::test_preview_aspect_ratio` and `::test_preview_bottom_whitespace_is_bounded`.
+- **Framework-first**: Work WITH Streamlit's native layout, not against it. Never override `position`, `overflow`, or `height` on framework containers (`.stApp`, `stAppViewContainer`, `stMain`, `stSidebar`). Only override `background-color` and cosmetic styles.
+- **Failed-fix hygiene**: If a CSS fix doesn't work, remove it. Don't layer more fixes on top. Don't encode unverified theories as permanent comments or instructions.
+- **Label rule**: Form-widget labels use a SINGLE global rule. Never scope to sidebar only. Add new widget classes to the global rule.
+- **Textarea override**: Both `[data-baseweb="textarea"]` and `[data-baseweb="base-input"]` must be overridden to `var(--bg-card)` — their defaults leak light.
+- **PDF-preview crop**: `render_pdf_preview()` clips to the content bbox. Gated by `tests/test_app_pdf_preview.py`.
+- **PDF embed**: The preview `<img>` must be inside the same `st.markdown` call as its wrapper `<div>` — splitting breaks the wrapper.
 
 ## UI Verification Workflow
-Visual/CSS regressions (white-on-dark, invisible labels, scroll lock) don't crash
-the app, so they slip past in-memory tests. There are two complementary gates:
+Two test gates catch visual regressions that don't crash the app:
 
-**1. In-memory smoke test** — [tests/test_app_smoke.py](tests/test_app_smoke.py)
-Uses `streamlit.testing.v1.AppTest` to run the app in-process with the UI
-fixture injected. Catches crashes, missing widgets, `st.error` calls, and
-broken session-state wiring. Runs on every `pytest` — ~25s, zero cost.
+1. **Smoke test** — [tests/test_app_smoke.py](tests/test_app_smoke.py): in-memory `AppTest`, catches crashes and missing widgets (~25s).
+2. **Visual test** — [tests/test_app_visual.py](tests/test_app_visual.py): headless Chromium via Playwright, screenshot to `.jp_ui_screenshot/app.png`, asserts no large white elements and dark backgrounds (~15s). Setup: `pip install playwright && python -m playwright install chromium`.
 
-**2. Visual snapshot test** — [tests/test_app_visual.py](tests/test_app_visual.py)
-Launches a real `streamlit run` subprocess + headless Chromium via Playwright,
-takes a full-page screenshot to `.jp_ui_screenshot/app.png`, and runs DOM-level
-color invariants: no element >200×200 px with an opaque white background,
-`.stApp` dark, status widget dark, section headers visible. This is the gate
-that catches the recurring "white rectangle" bug. Runs on every `pytest` — ~15s.
-
-**Fixture** — [tests/fixtures/ui_fixture.py](tests/fixtures/ui_fixture.py)
-`build_ui_fixture(path)` synthesizes a full `PipelineResult` (TailoredResume →
-real LaTeX render → real tectonic compile → real ATS check → real orphan
-detection) from `data/experience.example.yaml` with **zero LLM calls**, so
-CI costs nothing. When `JOBPLANNER_UI_FIXTURE=1` is set, `app.py` loads this
-fixture into `session_state["result"]` on first run, so developers can also
-eyeball the fixture state in a real browser:
+**Fixture** — [tests/fixtures/ui_fixture.py](tests/fixtures/ui_fixture.py): `build_ui_fixture(path)` produces a full `PipelineResult` from `experience.example.yaml` with zero LLM calls. Eyeball locally with:
 ```bash
 JOBPLANNER_UI_FIXTURE=1 streamlit run src/jobplanner/app.py
-```
-**After every UI change** (CSS, layout, new widgets), run both tests before
-shipping. If the fixture's TailoredResume references drift from
-`experience.example.yaml` ids, the fixture builder raises — fix the fixture,
-don't skip the test.
-
-Setup (one-time, for contributors running the visual test):
-```bash
-pip install playwright
-python -m playwright install chromium
 ```
 
 ## Bank Suggestions

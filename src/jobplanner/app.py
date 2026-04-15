@@ -57,14 +57,8 @@ st.markdown("""
 }
 
 /* ---- Global ---- */
-/* SCROLL-SAFETY: Noise texture is applied as a background-image directly on .stApp.
-   Do NOT use a ::before pseudo-element with position:fixed — it creates a stacking
-   context that breaks Streamlit's scroll container after results load, locking the
-   page.  Do NOT add position:relative here either — it breaks Streamlit's layout.
-   The SVG has opacity='0.025' baked in so no CSS opacity is needed. */
-.stApp,
-[data-testid="stAppViewContainer"],
-[data-testid="stAppViewBlockContainer"] {
+/* Noise texture directly on .stApp. No ::before (breaks stacking), no position:relative (breaks layout). */
+.stApp {
     background-color: var(--bg-primary) !important;
     background-image: var(--app-noise) !important;
     background-size: 256px 256px !important;
@@ -107,19 +101,7 @@ section[data-testid="stSidebar"] .stMarkdown li {
 section[data-testid="stSidebar"] .stMarkdown .stCaption p {
     color: var(--text-secondary) !important;
 }
-/*
- * IMPORTANT: Target only form control labels, NOT expander/button/summary elements.
- * Applying font-family to expander headers breaks Streamlit's icon font (renders as "arr").
- * Always use data-testid-scoped selectors here, never bare `label`.
- *
- * DEFENSE-IN-DEPTH: the rule below is GLOBAL (unscoped) so every form widget
- * anywhere in the app — sidebar, main tab, future tabs, modals — gets a
- * readable label by default. Previous bugs had labels scoped ONLY to
- * `section[data-testid="stSidebar"]`, which made every new widget added
- * outside the sidebar invisible until someone noticed and patched CSS.
- * Do NOT re-scope this rule. Add new widget classes here when Streamlit
- * ships new ones.
- */
+/* Global form label rule. Never bare `label` (breaks icon fonts). Add new widget classes here. */
 .stSelectbox label,
 .stMultiSelect label,
 .stRadio > label,
@@ -214,13 +196,7 @@ section[data-testid="stSidebar"] hr {
     padding: 14px 16px !important;
     transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
-/* BaseWeb textarea wrapper — some Streamlit versions darken this on re-render.
- * Streamlit nests: stTextArea > stTextAreaRootElement[data-baseweb=textarea] >
- *   div[data-baseweb=base-input] > <textarea>
- * All three layers ship with rgb(240,242,246) by default and must be forced
- * to the dark card color, otherwise the base-input wrapper leaks light
- * through as a ~1138x218 white rectangle against the dark theme.
- * See tests/test_app_visual.py::test_no_large_white_elements — regression gate. */
+/* BaseWeb textarea wrappers default to light bg — override both layers. */
 .stTextArea [data-baseweb="textarea"],
 .stTextArea [data-baseweb="base-input"] {
     background-color: var(--bg-card) !important;
@@ -339,11 +315,7 @@ div[data-baseweb="menu"] {
     box-shadow: 0 2px 12px rgba(201, 149, 58, 0.1) !important;
 }
 
-/* ---- Secondary buttons (Edit, Dismiss, Dismiss All Stale) ----
- * Use descendant (space) combinator rather than direct-child (>) — when
- * use_container_width=True is passed, Streamlit wraps the <button> in an
- * extra container, which would break `.stButton > button` matching.
- */
+/* ---- Secondary buttons (descendant combinator — Streamlit may add extra wrappers) ---- */
 button[kind="secondary"],
 button[data-testid="stBaseButton-secondary"] {
     font-family: 'JetBrains Mono', monospace !important;
@@ -376,8 +348,7 @@ button[data-testid="stBaseButton-secondary"]:focus {
     outline: none !important;
     box-shadow: 0 0 0 1px var(--accent-dim) !important;
 }
-/* Per-row Edit / × buttons — kill the label's inner <p> margin so the
- * glyph/text centers properly in the compact button box. */
+/* Kill inner <p> margin so button text centers. */
 button[kind="secondary"] p,
 button[data-testid="stBaseButton-secondary"] p {
     margin: 0 !important;
@@ -512,7 +483,6 @@ button[data-testid="stBaseButton-secondary"] p {
 .inf-badge.low { background: rgba(232, 88, 88, 0.08); color: var(--danger); }
 
 /* ---- PDF preview frame ---- */
-/* Shows the full PDF page — no max-height or overflow clipping. */
 .pdf-frame {
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -520,22 +490,20 @@ button[data-testid="stBaseButton-secondary"] p {
 }
 
 /* ---- Status widget (pipeline progress) ---- */
-[data-testid="stStatusWidget"],
-[data-testid="stStatusWidget"] > *,
-[data-testid="stStatusWidget"] details,
-[data-testid="stStatusWidget"] details > div,
-[data-testid="stStatusWidget"] summary {
+[data-testid="stStatusWidget"] {
     background-color: var(--bg-card) !important;
     color-scheme: dark !important;
-}
-[data-testid="stStatusWidget"] {
     border: 1px solid var(--border) !important;
     border-radius: 4px !important;
     margin-bottom: 8px !important;
 }
-/* Tighten the default Streamlit vertical block gap in the main tab so the
-   collapsed pipeline status widget sits directly above the results header
-   instead of leaving ~40px of dead space. */
+[data-testid="stStatusWidget"] > *,
+[data-testid="stStatusWidget"] details,
+[data-testid="stStatusWidget"] summary {
+    background-color: var(--bg-card) !important;
+    color-scheme: dark !important;
+}
+/* Tighten vertical block gap so status widget sits tight above results. */
 section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
     gap: 0.5rem !important;
 }
@@ -547,14 +515,7 @@ section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
     color: var(--text-secondary) !important;
 }
 
-/* ---- Expander ---- */
-/*
- * IMPORTANT: NEVER set font-family on `summary` or any element wrapping
- * Streamlit icon characters. Streamlit uses a private-use-area icon font
- * for expand/collapse arrows. Overriding font-family renders the icon as
- * garbled text (e.g. "arr"). Only set color/background, never font-family,
- * on summary or button elements containing icons.
- */
+/* ---- Expander (never set font-family on summary — breaks Streamlit icon font) ---- */
 [data-testid="stExpander"] {
     border-color: var(--border) !important;
     background-color: var(--bg-card) !important;
@@ -567,7 +528,7 @@ section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
 [data-testid="stExpanderContent"] {
     background-color: var(--bg-card) !important;
 }
-/* Color only on summary — no font-family (would break arrow icon) */
+/* Summary: color only, no font-family */
 [data-testid="stExpander"] summary,
 [data-testid="stExpander"] summary p,
 [data-testid="stExpander"] summary > div {
@@ -587,10 +548,7 @@ section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
 [data-testid="stMarkdownContainer"] {
     background-color: transparent !important;
 }
-/* Sidebar content */
-section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-    background: transparent !important;
-}
+/* Sidebar expander content */
 section[data-testid="stSidebar"] [data-testid="stExpander"] details,
 section[data-testid="stSidebar"] [data-testid="stExpander"] details > div,
 section[data-testid="stSidebar"] [data-testid="stExpanderContent"] {
@@ -609,19 +567,11 @@ section[data-testid="stSidebar"] [data-testid="stExpanderContent"] {
 }
 
 /* ---- Streamlit layout theming ---- */
-/* Streamlit's native layout uses absolute positioning + internal scrolling:
-     .stApp / stAppViewContainer  →  position: absolute; inset: 0; overflow: hidden
-     stMain                       →  height: 100dvh; overflow: auto  (THE scroll container)
-     stSidebar                    →  flex-stretches to viewport height
-   This is the correct model. Do NOT override position, overflow, or height on
-   these containers — doing so breaks scroll containment and causes the sidebar
-   and backgrounds to stop at the viewport boundary while content overflows.
-   Only set background-color and cosmetic styles here. */
+/* Only background-color + cosmetics. Never override position/overflow/height on framework containers. */
 html, body {
     background-color: var(--bg-primary) !important;
 }
 .main .block-container,
-.stMainBlockContainer,
 [data-testid="stMainBlockContainer"] {
     padding-bottom: 5rem !important;
     max-width: none !important;
@@ -735,7 +685,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
     border-color: #c9953a !important;
     color: #e0ad4e !important;
 }
-/* Target the text node directly — Streamlit may override color on p */
+/* Inherit styles on inner text nodes */
 div[data-testid="stRadio"] div[role="radiogroup"] label p,
 div[data-testid="stRadio"] div[role="radiogroup"] label span,
 div[data-testid="stRadio"] div[role="radiogroup"] label div {
@@ -986,12 +936,7 @@ UI_MODELS: dict[str, str] = {
 
 
 def render_pdf_preview(pdf_path: Path) -> bytes:
-    """Render the first page of a PDF to PNG, cropped to its content bbox.
-
-    Cropping to the content bbox keeps the preview tight around the resume
-    content instead of rendering the full US Letter page with a blank white
-    bottom strip.
-    """
+    """Render the first page of a PDF to PNG, cropped to content bbox."""
     doc = fitz.open(str(pdf_path))
     try:
         page = doc[0]
@@ -1086,13 +1031,7 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
-# UI-test fixture — populate session_state with a prebuilt PipelineResult
-# without calling any LLM API. Enabled by setting JOBPLANNER_UI_FIXTURE=1.
-#
-# This is the hook used by tests/test_app_smoke.py and the Playwright visual
-# smoke test. It's also useful during local UI development: export the env
-# var and restart streamlit to eyeball every results-panel code path without
-# spending tokens on a real pipeline run.
+# UI-test fixture (JOBPLANNER_UI_FIXTURE=1) — prebuilt PipelineResult, no LLM
 # ---------------------------------------------------------------------------
 
 if os.environ.get("JOBPLANNER_UI_FIXTURE") == "1" and "result" not in st.session_state:
@@ -1207,12 +1146,7 @@ with tab_tailor:
 
         col_pdf, col_report = st.columns([3, 2], gap="large")
 
-        # ---- Left column: PDF preview ----
-        # SCROLL-SAFETY: The image MUST be embedded as base64 inside a single st.markdown
-        # call so that the .pdf-frame div actually wraps the <img>.  Splitting across
-        # separate st.markdown / st.image calls silently breaks — Streamlit renders each
-        # call in its own DOM node, so the browser auto-closes the div before the image,
-        # and the max-height / overflow CSS has no effect.  Never split this back out.
+        # ---- Left column: PDF preview (img must be inside the same st.markdown as .pdf-frame) ----
         with col_pdf:
             png_bytes = render_pdf_preview(result.pdf_path)
             b64 = base64.b64encode(png_bytes).decode()

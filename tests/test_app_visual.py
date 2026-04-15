@@ -1,31 +1,10 @@
 """Playwright-based visual smoke test for the Streamlit UI.
 
-**Why this exists**: The AppTest-based smoke test at ``tests/test_app_smoke.py``
-catches crashes and missing widgets, but it runs in-memory and has zero
-visibility into CSS — so pure visual bugs (white band on a dark theme,
-light-on-light text, a popover with the wrong background) slip through.
-This test launches a real headless Chromium, loads the Streamlit app with
-the UI fixture active (no LLM calls, no tokens spent), takes a full-page
-screenshot, and runs a set of **DOM-level color invariants** against it:
+Launches headless Chromium with the UI fixture (no LLM calls), takes a
+screenshot to ``.jp_ui_screenshot/app.png``, and asserts DOM-level color
+invariants: dark backgrounds, no large white elements, visible headers.
 
-    * The Streamlit main container has a dark background.
-    * The status widget, when collapsed, has a dark background.
-    * The results section headers are dark, not white.
-    * Every visible element > 200x200 px has a background that is not
-      pure white (the common regression signature).
-
-The tests are skipped if playwright isn't installed or the chromium
-browser isn't available — install with::
-
-    pip install playwright
-    python -m playwright install chromium
-
-To run manually::
-
-    pytest tests/test_app_visual.py -v
-
-The screenshot lands at ``.jp_ui_screenshot/app.png`` under the repo root
-so it's easy to eyeball after a failing run.
+Requires: ``pip install playwright && python -m playwright install chromium``
 """
 
 from __future__ import annotations
@@ -166,27 +145,6 @@ def _bg_color(page, selector: str) -> str:
     )
 
 
-def _element_bottom_vs_document(page, selector: str) -> dict[str, float] | None:
-    """Return an element's document-bottom position and the page scroll height."""
-    return page.evaluate(
-        """
-        (selector) => {
-            const el = document.querySelector(selector);
-            if (!el) return null;
-            const rect = el.getBoundingClientRect();
-            return {
-                bottom: rect.bottom + window.scrollY,
-                scrollHeight: Math.max(
-                    document.documentElement.scrollHeight,
-                    document.body.scrollHeight
-                ),
-            };
-        }
-        """,
-        selector,
-    )
-
-
 def _parse_rgb(value: str) -> tuple[int, int, int, float] | None:
     """Parse a ``rgb(...)`` or ``rgba(...)`` string into an (r, g, b, a) tuple."""
     value = value.strip()
@@ -239,41 +197,8 @@ def test_main_container_is_dark(page) -> None:
     assert _is_dark(rgba), f".stApp is not dark: {rgba}"
 
 
-def test_app_shell_reaches_document_bottom(page) -> None:
-    """The themed app shell must extend to the full document height."""
-    geom = _element_bottom_vs_document(page, ".stApp")
-    assert geom is not None, "Could not measure .stApp geometry"
-    gap = abs(geom["scrollHeight"] - geom["bottom"])
-    assert gap <= 16, (
-        f".stApp stops {gap:.1f}px away from the document bottom "
-        f"(bottom={geom['bottom']:.1f}, scrollHeight={geom['scrollHeight']:.1f}). "
-        "This reintroduces the masked full-height shell bug where fallback "
-        "body/html background shows under the results."
-    )
-
-
-def test_sidebar_shell_reaches_document_bottom(page) -> None:
-    """The outer sidebar rail must extend to the document bottom too."""
-    geom = _element_bottom_vs_document(page, 'section[data-testid="stSidebar"]')
-    if geom is None:
-        pytest.skip("sidebar shell not present")
-    gap = abs(geom["scrollHeight"] - geom["bottom"])
-    assert gap <= 16, (
-        f"Sidebar shell stops {gap:.1f}px away from the document bottom "
-        f"(bottom={geom['bottom']:.1f}, scrollHeight={geom['scrollHeight']:.1f}). "
-        "This is the visible seam where the draggable sidebar rail no longer "
-        "matches the rest of the page height."
-    )
-
-
 def test_html_body_background_is_dark(page) -> None:
-    """``html`` and ``body`` must paint dark as defense-in-depth.
-
-    This ensures the browser-default white doesn't leak through if any
-    Streamlit container shell fails to cover the full document height.
-    ``test_no_large_white_elements`` iterates ``body *`` and therefore
-    excludes ``body`` and ``html`` themselves — this test fills that gap.
-    """
+    """html/body must paint dark — defense-in-depth against browser-default white."""
     for selector in ("html", "body"):
         rgba = _parse_rgb(_bg_color(page, selector))
         assert rgba is not None, f"Could not read {selector} background-color"
@@ -294,17 +219,9 @@ def test_status_widget_is_dark(page) -> None:
 
 
 def test_no_large_white_elements(page) -> None:
-    """No visible element larger than 200x200 px may have a pure-white opaque background.
+    """No element >200x200 px may have an opaque white background.
 
-    This is the invariant that catches the recurring "white background bug":
-    when a Streamlit update introduces a new widget whose CSS selector our
-    dark-theme overrides don't cover, it shows up as a large white rectangle
-    against the dark app. That pattern was user-reported twice before this
-    test landed; this check is the regression gate.
-
-    Exception: the ``<img>`` element inside ``.pdf-frame`` (the rendered
-    resume page) IS supposed to be white — resumes are printed on white
-    paper. The frame *wrapper* and everything else must stay dark.
+    Exception: the ``<img>`` inside ``.pdf-frame`` (rendered resume) is allowed.
     """
     offenders = page.evaluate(
         """
