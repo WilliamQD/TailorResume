@@ -147,27 +147,33 @@ _HEADING_TOKENS = (
 
 
 def detect_orphan_lines(pdf_path: Path) -> list[str]:
-    """Detect single-word / very short orphan wrap lines on the rendered PDF.
+    """Detect short orphan wrap lines on the rendered PDF.
 
-    An "orphan" is a short final line in a wrapped paragraph — e.g. a bullet
-    whose last 1-3 words dangle alone on line 2 of the same paragraph. We
-    identify these by looking **inside a single PyMuPDF text block** (which
-    corresponds to one LaTeX paragraph / bullet / skills line) and flagging a
-    final short line that follows at least one wide line in the same block.
+    An "orphan" is a short final line in a wrapped paragraph — a bullet
+    whose last 1-5 words dangle on line 2 of the same paragraph. We identify
+    these by looking **inside a single PyMuPDF text block** (one LaTeX
+    paragraph / bullet / skills line) and flagging a final short line that
+    follows at least one wide line in the same block.
+
+    **Threshold rationale**: the rule is "every bullet fits one line OR
+    nearly fills two lines." Earlier the threshold was 1-3 words, which
+    missed cases like 4-5 short-word tails (e.g. "then ship the final PDF.")
+    that still waste vertical space. 1-5 words matches the full orphan
+    spectrum: anything shorter than half a line below a full line is wasted
+    space, regardless of exact word count. Bullets whose line 2 carries 6+
+    words are treated as legitimate two-line content.
 
     **Why block-scoped**: earlier versions compared every adjacent pair of
     lines on the page, which produced false positives across block
-    boundaries — e.g. the last wrapped "Relevant Coursework: ..." line in the
-    Yale education block immediately followed by "University of Toronto" (the
-    next education entry's heading) looked like an orphan wrap but is
-    actually the header of a new block. PyMuPDF puts each paragraph in its
-    own block, so restricting the comparison to within-block pairs
-    eliminates those false positives without weakening real detection.
+    boundaries (e.g. the last wrapped coursework line immediately followed
+    by the next education entry's header). PyMuPDF puts each paragraph in
+    its own block, so restricting the comparison to within-block pairs
+    eliminates those false positives without weakening detection.
 
-    This is the post-render safety net for the orphan-wrap problem. The
-    primary defense is the ragged2e / emergencystretch preamble in
-    ``data/templates/resume.tex.j2`` and the renderer-side trim helpers;
-    this function verifies they worked.
+    This is the post-render safety net. The primary defense is the
+    programmatic length gate in ``src/jobplanner/tailor/length_gate.py``
+    (runs before render); this function verifies the combined gate +
+    LaTeX preamble defense worked.
 
     Returns a list of human-readable strings, one per orphan, so the
     pipeline can surface them as warnings. Returns an empty list on success.
@@ -246,8 +252,10 @@ def detect_orphan_lines(pdf_path: Path) -> list[str]:
                     cur_words = cur["text"].split()
                     prev_words = prev["text"].split()
 
-                    # Orphan characteristic: 1-3 words on the short line.
-                    if not 1 <= len(cur_words) <= 3:
+                    # Orphan characteristic: 1-5 words on the short line.
+                    # Widened from 1-3 to catch near-orphans that still waste
+                    # space (e.g. "then ship the final PDF.").
+                    if not 1 <= len(cur_words) <= 5:
                         continue
                     # Previous line must be "full enough" to be the body of a paragraph.
                     if len(prev_words) < 8:

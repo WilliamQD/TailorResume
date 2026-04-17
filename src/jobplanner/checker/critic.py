@@ -36,7 +36,7 @@ QUALITY CRITERIA — evaluate every bullet in two passes.
 2. SPECIFICITY: Are there concrete numbers, tools, or scale indicators?
 3. ACTION VERB: Does it start with a strong verb (Built, Designed, Reduced) not a weak one (Helped, Worked on)?
 4. JD ALIGNMENT: Does the language mirror the JD's vocabulary and priorities?
-5. LENGTH: Is it ~130–160 characters? Too short wastes space. Too long wraps awkwardly.
+5. LENGTH: Lean toward either short (~≤ 105 chars) or substantial (~≥ 185 chars). A downstream length gate will fix anything in between, so don't sweat exact counts — focus on impact and clarity.
 
 ## Pass 2: Humanization (do this AFTER pass 1, on the rewritten bullets)
 6. NO BUZZWORDS / FLUFF: strip filler phrases. Reject specifically:
@@ -71,16 +71,7 @@ QUALITY CRITERIA — evaluate every bullet in two passes.
       engineered → built / designed (unless literally an engineer)
       facilitated→ ran / led
       enabled    → let / helped
-12. Enforce the LINE-FILL RULE (MEASURED against this template):
-    each bullet must EITHER be ≤ 105 chars (one printed line) OR ≥ 185
-    chars (two full printed lines). NOTHING in the 106-184 forbidden zone
-    — those wrap with 2-5 orphan words on line 2 and waste page space.
-    If a bullet is in the forbidden zone, either TRIM it to ≤ 105 chars
-    or EXTEND it to ≥ 185 chars by adding ONE concrete detail (metric,
-    tool, scope, outcome). Never pad with vague words. A 117-char bullet
-    ("...and helped new analysts ramp up faster.") is a real failure from
-    a prior run — "faster." orphaned on line 2. Count characters.
-13. "What and why" test: every bullet must answer WHAT you did and WHY it
+12. "What and why" test: every bullet must answer WHAT you did and WHY it
     mattered to the business — in plain words. If you cannot say why it
     mattered, cut the bullet or flag the bank entry as thin.
 

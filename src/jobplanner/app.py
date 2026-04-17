@@ -12,8 +12,28 @@ import fitz
 import streamlit as st
 
 from jobplanner.bank.loader import load_bank, validate_bank
+from jobplanner.bank.schema import ExperienceBank
 from jobplanner.config import load_settings
+from jobplanner.latex.compiler import compile_latex
 from jobplanner.pipeline import PipelineResult, run_pipeline
+
+
+@st.cache_data(show_spinner=False)
+def _cached_load_bank(_mtime: float, path_str: str) -> ExperienceBank:
+    """Load bank once; re-parse only when the file's mtime changes."""
+    return load_bank(Path(path_str))
+
+
+@st.cache_data(show_spinner=False)
+def _cached_validate_bank(_mtime: float, path_str: str) -> list[str]:
+    """Validate bank once; re-check only when the file's mtime changes."""
+    return validate_bank(Path(path_str))
+
+
+def _get_bank() -> ExperienceBank:
+    """Return the cached bank, keyed on file modification time."""
+    p = load_settings().bank_path
+    return _cached_load_bank(p.stat().st_mtime, str(p))
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -1009,8 +1029,7 @@ with st.sidebar:
     # Bank summary
     with st.expander("Experience Bank", expanded=False):
         try:
-            settings_tmp = load_settings()
-            bank = load_bank(settings_tmp.bank_path)
+            bank = _get_bank()
             st.markdown(f"**{bank.meta.name}**")
             st.caption(f"{len(bank.education)} education  /  "
                        f"{len(bank.experience)} experiences  /  "
@@ -1020,7 +1039,8 @@ with st.sidebar:
             st.caption(f"{total} source bullets  /  "
                        f"{len(bank.inferred_skills)} inferred skills")
 
-            warnings = validate_bank(settings_tmp.bank_path)
+            _bp = load_settings().bank_path
+            warnings = _cached_validate_bank(_bp.stat().st_mtime, str(_bp))
             if warnings:
                 for w in warnings:
                     st.warning(w)
@@ -1077,7 +1097,7 @@ with tab_tailor:
     # Role exclusion — populate from the bank if it loads cleanly
     _role_options: list[str] = []
     try:
-        _bank_for_opts = load_bank(load_settings().bank_path)
+        _bank_for_opts = _get_bank()
         _role_options = [e.id for e in _bank_for_opts.experience] + \
                         [p.id for p in _bank_for_opts.projects]
     except Exception:
@@ -1157,8 +1177,12 @@ with tab_tailor:
                 unsafe_allow_html=True,
             )
 
-            # Download row
-            dl1, dl2 = st.columns(2)
+            # Download / copy row
+            has_tex = result.tex_path and result.tex_path.exists()
+            tex_content = (
+                result.tex_path.read_text(encoding="utf-8") if has_tex else ""
+            )
+            dl1, dl2, dl3 = st.columns(3)
             with dl1:
                 st.download_button(
                     "DOWNLOAD PDF",
@@ -1168,14 +1192,41 @@ with tab_tailor:
                     use_container_width=True,
                 )
             with dl2:
-                if result.tex_path and result.tex_path.exists():
+                if has_tex:
                     st.download_button(
                         "DOWNLOAD .TEX",
-                        data=result.tex_path.read_text(encoding="utf-8"),
+                        data=tex_content,
                         file_name=result.tex_path.name,
                         mime="text/plain",
                         use_container_width=True,
                     )
+            with dl3:
+                if has_tex:
+                    if st.button("COPY .TEX", use_container_width=True):
+                        escaped = json.dumps(tex_content)
+                        st.components.v1.html(
+                            f"<script>navigator.clipboard.writeText({escaped})</script>",
+                            height=0,
+                        )
+                        st.toast("Copied to clipboard")
+
+            # ---- Inline LaTeX editor ----
+            if has_tex:
+                with st.expander("Edit LaTeX"):
+                    edited_tex = st.text_area(
+                        "LaTeX source",
+                        value=tex_content,
+                        height=400,
+                        key=f"tex_editor_{result.tex_path}",
+                        label_visibility="collapsed",
+                    )
+                    if st.button("Recompile PDF", type="primary"):
+                        result.tex_path.write_text(edited_tex, encoding="utf-8")
+                        try:
+                            compile_latex(result.tex_path)
+                            st.rerun()
+                        except RuntimeError as exc:
+                            st.error(f"Compilation failed:\n\n{exc}")
 
         # ---- Right column: report ----
         with col_report:
@@ -1272,6 +1323,21 @@ with tab_tailor:
                     f'<div class="orphan-warn">'
                     f'<div class="orphan-title">! {len(result.orphan_warnings)} '
                     f'orphan wrap(s) detected</div>'
+                    f'{items_html}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+            # Length-gate warnings (bullets stuck in the 106-184 forbidden zone)
+            if result.length_warnings:
+                items_html = "".join(
+                    f'<div class="orphan-item">{html.escape(w)}</div>'
+                    for w in result.length_warnings
+                )
+                st.markdown(
+                    f'<div class="orphan-warn">'
+                    f'<div class="orphan-title">! {len(result.length_warnings)} '
+                    f'bullet(s) still in forbidden length zone</div>'
                     f'{items_html}'
                     f'</div>',
                     unsafe_allow_html=True,

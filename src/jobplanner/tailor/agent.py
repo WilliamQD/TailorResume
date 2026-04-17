@@ -144,6 +144,48 @@ def _format_jd_summary(jd: ParsedJD) -> str:
     return "\n".join(lines)
 
 
+def _fix_misclassified_entries(
+    tailored: TailoredResume,
+    bank: ExperienceBank,
+) -> None:
+    """Move entries the LLM put in the wrong category (experience vs project).
+
+    LLMs occasionally place a project source_id in selected_experiences or
+    vice-versa. Rather than failing validation, silently move the entry to
+    the correct list.  Mutates *tailored* in place.
+    """
+    exp_ids = {e.id for e in bank.experience}
+    proj_ids = {p.id for p in bank.projects}
+
+    # Experiences that are actually projects
+    still_exp = []
+    for sel in tailored.selected_experiences:
+        if sel.source_id in exp_ids:
+            still_exp.append(sel)
+        elif sel.source_id in proj_ids:
+            from jobplanner.bank.schema import SelectedProject
+            tailored.selected_projects.append(
+                SelectedProject(source_id=sel.source_id, bullets=sel.bullets)
+            )
+        else:
+            still_exp.append(sel)  # truly unknown — let the validator flag it
+    tailored.selected_experiences = still_exp
+
+    # Projects that are actually experiences
+    still_proj = []
+    for sel in tailored.selected_projects:
+        if sel.source_id in proj_ids:
+            still_proj.append(sel)
+        elif sel.source_id in exp_ids:
+            from jobplanner.bank.schema import SelectedExperience
+            tailored.selected_experiences.append(
+                SelectedExperience(source_id=sel.source_id, bullets=sel.bullets)
+            )
+        else:
+            still_proj.append(sel)  # truly unknown — let the validator flag it
+    tailored.selected_projects = still_proj
+
+
 def tailor_resume(
     client: LLMClient,
     bank: ExperienceBank,
@@ -166,8 +208,10 @@ def tailor_resume(
         exclude_roles=settings.exclude_roles,
     )
 
-    return client.complete(
+    result = client.complete(
         system=TAILOR_SYSTEM_PROMPT,
         user=user_prompt,
         response_model=TailoredResume,
     )
+    _fix_misclassified_entries(result, bank)
+    return result

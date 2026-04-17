@@ -161,6 +161,53 @@ def test_no_orphan_for_paired_entry_header(tmp_path: Path) -> None:
     assert orphans == []
 
 
+def test_detects_four_word_near_orphan(tmp_path: Path) -> None:
+    """A 4-word tail (e.g. 'then ship the PDF.') is flagged under the widened threshold.
+
+    The forbidden zone isn't just 1-3 word tails — 4-5 word tails still waste
+    vertical space and must be caught. The Google paradox (100% forbidden-zone
+    bullets, 0 detected orphans under the old 1-3 threshold) was the
+    motivating case.
+    """
+    pdf = _make_pdf(
+        tmp_path,
+        [
+            (72, 100, WIDE_LINE),
+            (72, 112, "then ship the PDF."),
+        ],
+    )
+    orphans = detect_orphan_lines(pdf)
+    assert len(orphans) == 1
+    assert "then ship the PDF." in orphans[0]
+
+
+def test_detects_five_word_near_orphan(tmp_path: Path) -> None:
+    """A 5-word tail is flagged — the upper bound of the widened threshold."""
+    pdf = _make_pdf(
+        tmp_path,
+        [
+            (72, 100, WIDE_LINE),
+            (72, 112, "into a one page PDF."),
+        ],
+    )
+    orphans = detect_orphan_lines(pdf)
+    assert len(orphans) == 1
+    assert "into a one page PDF." in orphans[0]
+
+
+def test_no_orphan_for_six_word_line(tmp_path: Path) -> None:
+    """A 6-word second line is treated as legitimate two-line body content."""
+    pdf = _make_pdf(
+        tmp_path,
+        [
+            (72, 100, WIDE_LINE),
+            (72, 112, "and finally ship the final PDF."),
+        ],
+    )
+    orphans = detect_orphan_lines(pdf)
+    assert orphans == []
+
+
 def test_orphan_still_flagged_alongside_paired_row(tmp_path: Path) -> None:
     """A legit orphan in the same block should still be flagged even when
     another unrelated line happens to be paired-y below it.

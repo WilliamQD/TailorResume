@@ -5,13 +5,15 @@ Automated resume tailoring CLI. Paste a job description → get a tailored, ATS-
 ## Project Structure
 - `src/jobplanner/` — main package
   - `llm/` — LLM abstraction (Claude + OpenAI providers)
-  - `bank/` — experience bank schema, loader, AI-assisted updater, persistent suggestions
+  - `bank/` — experience bank schema, loader, locator (path resolution), AI-assisted updater, persistent suggestions
   - `parser/` — job description parser
-  - `tailor/` — resume tailoring agent + hallucination validator
+  - `tailor/` — resume tailoring agent, prompt enrichment, hallucination validator, and programmatic line-fill gate (`length_gate.py`)
   - `latex/` — Jinja2 renderer + tectonic PDF compiler
-  - `checker/` — ATS text extraction + proofreader
+  - `checker/` — ATS text extraction, proofreader, and post-tailor `critic.py` (feeds `length_gate.py`)
+  - `market/` — skill tracker DB layer (shared with `bank/suggestions.py`)
+  - `config.py` — model alias resolution + `JOBPLANNER_MODEL` env var reader
   - `pipeline.py` — end-to-end orchestrator
-  - `cli.py` — Click CLI entry point
+  - `cli.py` / `__main__.py` — Click CLI entry points (`python -m jobplanner ...`)
   - `app.py` — Streamlit web UI
 - `data/experience.yaml` — THE source of truth for all resume content (gitignored; copy from `experience.example.yaml`)
 - `data/templates/` — Jinja2 LaTeX templates
@@ -164,6 +166,6 @@ JOBPLANNER_UI_FIXTURE=1 streamlit run src/jobplanner/app.py
 - All AI calls go through `llm/base.py` LLMClient protocol
 - Every tailored bullet must cite its source via `source_id` + `source_bullet_indices`
 - Audience-aware tailoring: bullets are framed differently depending on the JD's discipline — but the voice is ALWAYS plain HR-friendly English, never discipline jargon piled into clusters
-- **Line-fill rule** (measured, not guessed): every bullet either fits one printed line (≤ 105 chars) or fills two (≥ 185 chars). Forbidden zone 106-184 is rejected because it wraps with dangling 2-5-word tails. Enforced in the tailor system prompt, critic Pass 3, AND the LaTeX preamble.
-- **LaTeX orphan-wrap invariants**: `data/templates/resume.tex.j2` loads `ragged2e` and `microtype` with `protrusion=true,final`, then sets `\tolerance=2000`, `\emergencystretch=3em`, `\hyphenpenalty=1000`, `\exhyphenpenalty=1000`. Bulleted lists use `before=\RaggedRight` via enumitem. The skills (`sections/skills.tex.j2`) and coursework (`sections/education.tex.j2`) blocks wrap their `{\small ...}` body in `\RaggedRight`. **Never remove any of these** — they prevent single-word orphan lines on line 2 of wrapped bullets, a bug that recurred multiple times before this defense was added. **Do NOT add `expansion=true` to the microtype options** — it's incompatible with XeTeX (which tectonic uses) and fails compilation. After compile, `detect_orphan_lines()` in `latex/compiler.py` scans the rendered PDF for remaining orphans and surfaces them as warnings in `PipelineResult.orphan_warnings`, visible as a yellow banner in the Streamlit results column and persisted to `report.json`.
+- **Line-fill rule** (measured programmatically, NOT by the LLM): every bullet either fits one printed line (≤ 105 chars) or fills two (≥ 185 chars). The 106-184 forbidden zone wraps with 1-5-word tails and wastes space. LLMs cannot reliably count characters, so enforcement is Python-side via `tailor/length_gate.py` — it runs after the critic, flags any forbidden-zone bullet, and issues one batched LLM rewrite call per round (max 2 rounds). Zero extra API cost on clean runs. The tailor prompt and critic prompt carry only soft guidance — the gate is authoritative.
+- **LaTeX orphan-wrap invariants**: `data/templates/resume.tex.j2` loads `ragged2e` and `microtype` with `protrusion=true,final`, then sets `\tolerance=2000`, `\emergencystretch=5em`, `\hyphenpenalty=1000`, `\exhyphenpenalty=1000`. Bulleted lists use `before=\RaggedRight` via enumitem. The skills (`sections/skills.tex.j2`) and coursework (`sections/education.tex.j2`) blocks wrap their `{\small ...}` body in `\RaggedRight`. **Never remove any of these** — they form the LaTeX-level safety net that catches the shallowest overflows (~106-117 chars) before the length gate sees them. **Do NOT add `expansion=true` to the microtype options** — it's incompatible with XeTeX (which tectonic uses) and fails compilation. After compile, `detect_orphan_lines()` in `latex/compiler.py` scans the rendered PDF for 1-5-word tails and surfaces them as warnings in `PipelineResult.orphan_warnings`. Bullets the length gate couldn't fix are surfaced separately as `PipelineResult.length_warnings`. Both appear as yellow banners in the Streamlit results column and are persisted to `report.json`.
 - **Skills-line cap**: maximum 7 skills per line AND the full rendered line (label + joined skills) must be ≤ 110 characters. Enforced in the tailor prompt's `# SKILLS SECTION — CRITICAL` block. An 8-skill line at ~130 chars always wraps with 1-2 orphan words.

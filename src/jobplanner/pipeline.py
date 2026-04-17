@@ -32,6 +32,7 @@ from jobplanner.llm.base import LLMClient
 from jobplanner.parser.jd_parser import parse_jd
 from jobplanner.tailor.agent import tailor_resume
 from jobplanner.tailor.enrichment import build_enriched_context
+from jobplanner.tailor.length_gate import enforce_line_fill
 from jobplanner.tailor.validator import ValidationResult, validate_tailored_resume
 
 
@@ -49,6 +50,7 @@ class PipelineResult:
     proofread_result: ProofreadResult | None = None
     output_dir: Path | None = None
     orphan_warnings: list[str] = field(default_factory=list)
+    length_warnings: list[str] = field(default_factory=list)
 
 
 def _trim_content(tailored: TailoredResume) -> str:
@@ -205,6 +207,20 @@ def run_pipeline(
     else:
         _emit("Stage 5/9: Critic pass skipped")
 
+    # --- Length gate: programmatic enforcement of the 106-184 forbidden zone ---
+    # This is the canonical orphan defense. LLMs cannot count characters; we
+    # measure in Python and send one batched rewrite call only if any bullets
+    # land in the forbidden zone. Zero API cost on clean runs.
+    _emit("  Length gate: checking line-fill compliance...")
+    _, length_warnings = enforce_line_fill(result.tailored, bank, client)
+    result.length_warnings = length_warnings
+    if length_warnings:
+        _emit(f"  [!] {len(length_warnings)} bullet(s) could not be fixed to a safe length band:")
+        for w in length_warnings:
+            _emit(f"      - {w}")
+    else:
+        _emit("  -> All bullets in safe length bands.")
+
     # --- Stage 6: Persist bank suggestions ---
     bank_suggestions = result.critic_result.bank_suggestions if result.critic_result else []
     if bank_suggestions:
@@ -303,6 +319,9 @@ def run_pipeline(
             if not result.validation.passed:
                 _emit("  Re-validation failed — using previous version.")
                 break
+            # Re-enforce line-fill after re-tailor (the new bullets are fresh).
+            _, retail_warnings = enforce_line_fill(result.tailored, bank, client)
+            result.length_warnings = retail_warnings
             continue
         break
     else:
@@ -396,6 +415,7 @@ def run_pipeline(
             "market_boosted_skills": enriched.market_boost_skills,
             "critic_summary": result.critic_result.summary if result.critic_result else None,
             "orphan_warnings": result.orphan_warnings,
+            "length_warnings": result.length_warnings,
         }
         report_path = out_dir / "report.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")

@@ -152,38 +152,13 @@ technical tools. Follow these rules:
 - Do NOT add filler phrases like "Leveraged cutting-edge" or
   "Spearheaded innovative". Be concrete and specific.
 
-# LINE-FILL RULE — NON-NEGOTIABLE (measured, not guessed)
+# LINE-FILL RULE — soft guidance (hard enforcement is downstream)
 
-Every bullet must EITHER fit on ONE printed line OR fill TWO full printed
-lines. NEVER write a bullet that wraps with only 2-5 short words on line 2
-— that wastes half a line of page space and looks sloppy.
-
-The numbers below are MEASURED against the actual template (10pt Latin
-Modern, 7.3in text width, 1.15em itemize indent):
-
-- ONE-LINE bullet: ≤ 105 characters (incl. spaces and punctuation).
-  Safe zone: ~85-105 chars.
-- TWO-LINE bullet: ≥ 185 characters. Must carry enough content to push
-  well past the line-2 left margin.
-  Safe zone: ~185-210 chars.
-- FORBIDDEN ZONE: 106-184 characters. Bullets in this range WILL wrap
-  with a short dangling tail on line 2.
-
-If a draft lands in the forbidden zone, you have two options:
-  (a) TRIM it to ≤ 105 characters by cutting filler or shortening verbs.
-  (b) EXTEND it to ≥ 185 characters by adding ONE concrete detail — a
-      metric, a scope indicator, a named tool, or the user/business
-      outcome. NEVER pad with vague words.
-
-Examples of dangling-tail bullets to AVOID:
-  ✗ "... cut clinical data delivery turnaround from months to weeks."
-    (if "weeks." ends up alone on line 2)
-  ✗ "... and helped new analysts ramp up faster."
-    (if "faster." ends up alone on line 2 — exactly what happened in a
-    prior run at 117 chars, inside the forbidden zone)
-
-Apply this rule BEFORE you finalize output. Count characters mentally —
-don't eyeball them. Err toward ≤ 105 or ≥ 190.
+Aim for bullets that are either short (≤ 105 chars) or substantial
+(≥ 185 chars). The 106-184 range wraps with a short dangling tail on
+line 2 and wastes page space. A programmatic length gate will rewrite
+any bullet that lands in that range, so getting close is fine — don't
+try to count characters.
 
 # COURSEWORK SELECTION
 
@@ -287,8 +262,6 @@ def build_tailor_user_prompt(
   Emphasize the aspects most relevant to this specific JD.
 - Tailor the skills section labels and ordering to match what this JD values.
 - Inferred skills may appear in the skills section lines for keyword matching.
-- Obey the LINE-FILL RULE: every bullet either fits one line (≤ 105 chars)
-  or fills two lines (≥ 185 chars). Forbidden zone 106-184 — NEVER.
 - Use plain HR-friendly English: simple verbs, no jargon clusters, no
   "authored / spearheaded / orchestrated / leveraged".
 

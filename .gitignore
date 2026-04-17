@@ -39,3 +39,6 @@ data/examples/*.png
 
 # Test-generated UI screenshots
 .jp_ui_screenshot/
+
+# Test-generated UI fixture outputs
+.jp_ui_fixture/

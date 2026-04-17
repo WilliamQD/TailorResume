@@ -15,12 +15,14 @@
 % Default \tolerance=200 and \emergencystretch=0pt force the line-breaker to
 % pick "early break + short wrap" over "stretch previous line a bit", which
 % produces single-word orphan lines on line 2. We raise tolerance and grant
-% 3em of emergency slack so 1-3 words of overflow absorb into the previous
-% line instead of orphaning. Combined with ragged2e's \RaggedRight inside
-% itemize and the skills/coursework blocks, this eliminates orphans without
-% sacrificing readability. Never remove these — see CLAUDE.md.
+% 5em of emergency slack so short overflows absorb into the previous line
+% instead of orphaning. 3em only saved bullets at ~106-112 chars; 5em pulls
+% the effective safe zone down to ~106-117 chars, letting the programmatic
+% length gate focus on the deeper forbidden-zone cases. Combined with
+% ragged2e's \RaggedRight inside the skills/coursework blocks, this plus the
+% length gate eliminates orphans. Never remove these — see CLAUDE.md.
 \tolerance=2000
-\emergencystretch=3em
+\emergencystretch=5em
 \hyphenpenalty=1000
 \exhyphenpenalty=1000
 \hbadness=10000
