@@ -11,9 +11,11 @@ JobPlanner uses a **synthesis approach**: instead of storing pre-written resume 
 1. **Parse JD** — Extract title, company, required skills, role type from the job description
 2. **Tailor Resume** — LLM selects experiences/projects and synthesizes bullets matched to the JD
 3. **Validate** — Anti-hallucination checks ensure every claim traces back to the experience bank
-4. **Render LaTeX** — Jinja2 template generates a `.tex` file with configurable spacing
-5. **Compile PDF** — Tectonic compiles to PDF with automatic one-page retry loop
-6. **ATS Check** — Extracts text from the PDF and scores keyword coverage against the JD
+4. **Critic Pass** — A second LLM pass rewrites weak bullets for specificity, action verbs, and JD alignment
+5. **Length Gate** — Python measures every bullet against the 106–184 char forbidden zone and issues one batched rewrite if any land there (LLMs can't reliably count characters). Zero API cost on clean runs.
+6. **Render LaTeX** — Jinja2 template generates a `.tex` file with configurable spacing
+7. **Compile PDF** — Tectonic compiles to PDF with automatic one-page retry loop; PyMuPDF then scans the rendered PDF for 1–5-word orphan tails and surfaces them as warnings
+8. **ATS Check** — Extracts text from the PDF and scores keyword coverage against the JD
 
 ## Features
 
@@ -21,6 +23,8 @@ JobPlanner uses a **synthesis approach**: instead of storing pre-written resume 
 - **Anti-hallucination validation** — every bullet must cite its source in the experience bank
 - **ATS keyword scoring** — checks how many JD keywords appear in the final PDF
 - **One-page auto-fit** — progressive spacing adjustments + content trimming to guarantee one page
+- **Programmatic orphan defense** — Python-side line-fill gate plus LaTeX microtype/ragged2e tuning and PDF-side orphan detection, layered so nothing slips through
+- **Persistent bank suggestions** — each run surfaces weak-bullet diagnostics; accumulated across JDs in a local SQLite DB and browsable in the Web UI's Bank Health tab
 - **Multi-LLM** — supports Claude (Anthropic) and OpenAI models
 - **Audience-aware** — frames the same experience differently for SWE vs DS vs finance roles
 - **CLI + Web UI** — Click CLI for automation, Streamlit app for interactive use
@@ -43,7 +47,7 @@ Edit `data/experience.yaml` with your own education, experience, projects, and s
 
 ### 3. Set API keys
 
-Set at least one provider's API key:
+Set at least one provider's API key. Keys are resolved in order: **environment variable → Python `keyring` → PowerShell SecretStore (Windows-only fallback)**.
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -51,7 +55,14 @@ export OPENAI_API_KEY="sk-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-On Windows, you can also use PowerShell SecretStore (see [Configuration](#configuration)).
+Prefer keyring for long-lived setup (cross-platform — macOS Keychain, Windows Credential Manager, Linux Secret Service):
+
+```bash
+python -c "import keyring; keyring.set_password('jobplanner', 'JP-openai-apikey', 'sk-...')"
+python -c "import keyring; keyring.set_password('jobplanner', 'JP-claude-apikey', 'sk-ant-...')"
+```
+
+On Windows you can also use PowerShell SecretStore (see [Configuration](#configuration)).
 
 ### 4. Install tectonic
 
@@ -113,7 +124,10 @@ pip install -e ".[web]"
 streamlit run src/jobplanner/app.py
 ```
 
-The Streamlit app provides an interactive interface for pasting job descriptions, selecting models, and previewing/downloading the tailored PDF.
+The Streamlit app has two tabs:
+
+- **Resume Tailor** — paste a JD, pick a model, run the pipeline, preview and download the PDF, and see ATS coverage, critic summary, and orphan/length warnings in one view.
+- **Bank Health** — every run persists weak-bullet suggestions into a local SQLite DB. This tab lets you browse accumulated suggestions across JDs, sort by frequency/priority/recency, and jump straight to the source bullet in `experience.yaml` via Edit-in-Bank.
 
 ## Configuration
 
@@ -124,6 +138,22 @@ The Streamlit app provides an interactive interface for pasting job descriptions
 | `OPENAI_API_KEY` | OpenAI API key | — |
 | `ANTHROPIC_API_KEY` | Anthropic (Claude) API key | — |
 | `JOBPLANNER_MODEL` | Default model | `gpt-5.4-mini` |
+| `JOBPLANNER_DATA_DIR` | Personal-data root (see [Personal Data Sync](#personal-data-sync)) | repo's `data/` |
+
+### Personal Data Sync
+
+`experience.yaml` and `market/skill_tracker.db` are personal data. Point `JOBPLANNER_DATA_DIR` at a folder-sync location (Google Drive, Dropbox, iCloud, Syncthing…) to use the same bank and tracker DB across machines. Templates and guidelines stay under the repo's `data/` regardless.
+
+Expected layout under `JOBPLANNER_DATA_DIR`:
+
+```
+JobPlannerData/
+├── experience.yaml
+└── market/
+    └── skill_tracker.db
+```
+
+The SQLite tracker is binary and cannot be merged — wait for the sync to settle before switching laptops mid-edit, or you risk a conflict copy. The `output/` folder is intentionally not synced (regenerable per machine).
 
 ### Model Aliases
 
@@ -156,12 +186,14 @@ Set-Secret -Name 'JP-claude-apikey' -Secret '<your-key>'
 ```
 src/jobplanner/
   llm/          LLM abstraction (protocol + Claude/OpenAI clients)
-  bank/         Experience bank: schema, loader, AI-assisted updater
+  bank/         Experience bank: schema, loader, locator, AI-assisted updater, persistent suggestions
   parser/       Job description parser
-  tailor/       Resume tailoring agent + hallucination validator
-  latex/        Jinja2 renderer + tectonic PDF compiler
-  checker/      ATS text extraction + proofreader
+  tailor/       Resume tailoring agent + hallucination validator + programmatic length gate
+  latex/        Jinja2 renderer + tectonic PDF compiler + orphan detector
+  checker/      ATS text extraction, proofreader, post-tailor critic
+  market/       Skill-tracker SQLite DB (shared with bank/suggestions)
   cli.py        Click CLI entry point
+  __main__.py   `python -m jobplanner ...` entry point
   app.py        Streamlit web UI
   pipeline.py   End-to-end orchestrator
   config.py     Settings, model mapping, secret resolution
