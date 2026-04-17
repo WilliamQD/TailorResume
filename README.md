@@ -8,6 +8,39 @@ JobPlanner uses a **synthesis approach**: instead of storing pre-written resume 
 
 ### Pipeline Stages
 
+```mermaid
+flowchart TD
+    JD([Job Description<br/>pasted text])
+    Bank[(experience.yaml<br/>factual bank)]
+
+    JD --> P[1 · Parse JD]
+    P --> T[2 · Tailor<br/>LLM synthesizes bullets]
+    Bank --> T
+
+    T --> V{3 · Validate<br/>anti-hallucination}
+    V -->|fail| T
+    V -->|pass| C[4 · Critic Pass<br/>LLM quality rewrite]
+
+    C --> L{5 · Length Gate<br/>measured in Python<br/>106–184 char forbidden zone}
+    L -->|violations| LR[Batched LLM rewrite]
+    LR --> L
+    L -->|all clean| R[6 · Render LaTeX]
+
+    R --> PDF[7 · Compile PDF<br/>Tectonic]
+    PDF -->|> 1 page| R
+    PDF --> OC[8 · Orphan detect + ATS check]
+    OC --> Out([Tailored PDF<br/>+ report.json])
+
+    classDef llm fill:#1d4ed8,stroke:#1e3a8a,color:#fff
+    classDef code fill:#047857,stroke:#064e3b,color:#fff
+    classDef io fill:#4b5563,stroke:#1f2937,color:#fff
+    class T,C,LR llm
+    class P,V,L,R,PDF,OC code
+    class JD,Bank,Out io
+```
+
+<sub>Blue = LLM call · Green = deterministic Python/LaTeX · Grey = I/O</sub>
+
 1. **Parse JD** — Extract title, company, required skills, role type from the job description
 2. **Tailor Resume** — LLM selects experiences/projects and synthesizes bullets matched to the JD
 3. **Validate** — Anti-hallucination checks ensure every claim traces back to the experience bank
