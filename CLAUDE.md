@@ -89,10 +89,19 @@ source ~/.zshrc
 The synced directory layout must mirror the repo's `data/`:
 ```
 JobPlannerData/
-├── experience.yaml
-└── market/
-    └── skill_tracker.db
+|-- experience.yaml
+|-- masters/
+|   |-- biostats_clinical_ds/   William_Zhang_Resume.pdf + William_Zhang_Resume.tex + report.md
+|   |-- ds/
+|   |-- mle/
+|   |-- overall_general_tech/
+|   `-- swe/
+`-- market/
+    `-- skill_tracker.db
 ```
+
+Master resume folders under `masters/` use `William_Zhang_Resume.tex` and
+`William_Zhang_Resume.pdf` as the canonical manually maintained filenames.
 
 **Concurrency caveat:** the SQLite tracker DB is binary and cannot be merged.
 Wait for Google Drive to fully sync before switching laptops mid-edit, or you
